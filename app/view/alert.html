@@ -197,11 +197,17 @@
             height: 56px;
             font-size: large;
         }
+
+        .ivu-btn-success.disabled {
+            color: #6a6f75;
+            background-color: #d8d2d2;
+            border-color: #bdbdbb;
+        }
     </style>
 </head>
 
 <body>
-    <div id="app" style="width: 100%;height: 100%;">
+    <div id="app" style="width: 100%;height: 100%;user-select:none;">
         <div id="alert">
             <audio ref="audio" src="" autoplay="true" volume="1"></audio>
             <div class="header">
@@ -236,27 +242,20 @@
                     </i-Circle>
                 </div>
                 <div class="foot">
-                    <i-Button type="success" size="large" class="btn-large">领取</i-Button>
-                    <a v-for="button in message.buttons" :class="disableBtn ? 'button-disable':'button-primary'" @click.stop="btnRequest(button)"
-                        class="button">
-                        <span>{{button.name}}</span>
-                    </a>
+                    <i-Button type="success" size="large" class="btn-large" :disabled="isOverTime">{{isOverTime?'已超时':'领取'}}</i-Button>
                 </div>
             </div>
         </div>
     </div>
 </body>
 <script>
-    //获取当天窗口
+    //获取当前窗口
     const remote = require('electron').remote
     const {
         ipcRenderer
     } = require('electron')
     const currentWindow = remote.getCurrentWindow()
-    ipcRenderer.on('open-get-kz', (event, arg) => {
-        console.log(arg) // prints "pong"
-        alert(arg)
-    })
+
     //获取url中的参数
     function getQueryString() {
         var qs = location.search.substr(1), // 获取url中"?"符后的字串  
@@ -283,16 +282,16 @@
             time: 0,
             param: '',
             percent: 100,
-            disableBtn: false
+            isOverTime: false
         },
         created() {
-            this.setTimer(100);
-            let param = getQueryString()['param'];
-            this.message.num = param;
+            //获取客资信息
+            this.getKZInfo();
         },
         methods: {
             //关闭窗口
             closeWindow: function () {
+                //关闭窗口时，如果未超时，则向服务器发送主动关闭窗口的请求
                 currentWindow.close();
             },
             //定时器
@@ -305,14 +304,29 @@
                     time--
                     that.time = time
                     if (time <= 0) {
-                        clearInterval(intervalTimer)
-                        that.disableBtn = true
+                        //清空定时器
+                        clearInterval(intervalTimer);
+                        //处理超时
+                        this.handleOverTime();
                     }
+                    //进度
                     let percent = this.time / this.allTime;
                     percent = percent * 100;
                     percent.toFixed(0);
                     this.percent = percent;
                 }, 1000)
+            },
+            //处理超时
+            handleOverTime() {
+                //已经超时
+                this.isOverTime = true;
+            },
+            //获取客资信息
+            getKZInfo() {
+                let message = ipcRenderer.sendSync('request-get-now-receive-kz-info', 'ping')
+                this.message = JSON.parse(message);
+                this.allTime = this.message.time;
+                this.setTimer(this.message.time);
             }
         }
     });

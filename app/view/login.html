@@ -9,12 +9,17 @@
     <script src="./../static/js/axios.js"></script>
     <script src="./../static/js/vue.js"></script>
     <script src="./../static/js/iview.js"></script>
-    <link rel="stylesheet" href="./../static/css/init.css">
+    <!-- <link rel="stylesheet" href="./../static/css/init.css"> -->
     <link rel="stylesheet" href="./../static/css/iview.css">
     <style>
         .win-class {
             width: 100%;
             height: 100%;
+        }
+
+        ul,
+        ol {
+            list-style: none;
         }
 
         .login-pannle {
@@ -25,7 +30,9 @@
 
         .company-img {
             width: 100%;
-            height: 150px;
+            height: 110px;
+            text-align: center;
+            margin-top: 38px;
         }
 
         .main {
@@ -203,33 +210,44 @@
             color: red;
 
         }
+
+        .code-img {
+            vertical-align: bottom;
+            height: 34px;
+            position: absolute;
+            right: 3px;
+            top: 2px;
+            z-index: 100;
+            border-left: 1px solid #e2e2e2;
+        }
     </style>
 </head>
 
 <body>
     <div id="app" class="win-class">
         <div class="company-img">
-            <img src="" alt="">
+            <img src="../static/icons/256x256.png" alt="" width="80px" height="80px">
         </div>
         <div class="login-pannle">
             <div v-if="!bShowChoseCompany">
                 <i-Form :model="userInfo" :rules="ruleInline" ref="formInline">
                     <Form-Item prop="user">
-                        <i-Input type="text" size="large" :maxlength="11" v-model="userInfo.user" style="margin-top: 16px;">
+                        <i-Input type="text" size="large" @on-blur="fUserBlur" :maxlength="11" v-model="userInfo.user">
                             <Icon type="person" slot="prepend"></Icon>
                         </i-Input>
                     </Form-Item>
                     <Form-Item prop="password">
-                        <i-Input type="password" size="large" v-model="userInfo.password" style="margin-top: 16px;">
+                        <i-Input type="password" size="large" v-model="userInfo.password">
                             <Icon type="locked" slot="prepend"></Icon>
                         </i-Input>
                     </Form-Item>
-                    <div v-if="bShowCode" style="position: relative;margin-top: 16px;">
-                        <i-Input type="text" v-model="userInfo.code" size="large" style="width: 200px;">
-                            <span slot="prepend">验证码</span>
-                        </i-Input>
-                        <img @click="fChangeCodeImg" :src="codeImg" style="vertical-align: bottom;height: 36px;position: absolute;right: 0;top: 1px;"
-                            alt="">
+                    <div v-if="bShowCode" style="position: relative;">
+                        <Form-Item>
+                            <i-Input type="text" v-model="userInfo.code" size="large"  :maxlength="11">
+                                <span slot="prepend">验证码</span>
+                            </i-Input>
+                        </Form-Item>
+                        <img @click="fChangeCodeImg" :src="codeImg" class="code-img" alt="验证码">
                     </div>
                 </i-Form>
             </div>
@@ -254,7 +272,7 @@
                 </div>
             </div>
             <div v-if="!!errorMsg" class="warn-msg">{{errorMsg}}</div>
-            <i-Button type="primary" size="large" @click="handleSubmit('formInline')" long style="margin-top: 30px;margin-bottom: 10px;">
+            <i-Button type="primary" size="large" @click="handleSubmit('formInline')" long style="margin-top: 30px;">
                 立即登录
             </i-Button>
         </div>
@@ -344,7 +362,7 @@
             },
             //处理登录验证
             handleSubmit(name) {
-                this.fGetCompanyList();
+                this.fDoLogin();
             },
             //获取公司列表
             fGetCompanyList() {
@@ -357,6 +375,7 @@
                     .then((res) => {
                         let data = res.data;
                         if (data.code === 100000) {
+                            //当用户只有一个公司时，直接登录
                             if (data.data.length === 1) {
                                 this.selectedCompany.id = data.data[0].id
                                 this.fLogin()
@@ -374,6 +393,8 @@
                             }
                         } else {
                             this.errorMsg = data.msg;
+                            this.fUserBlur();
+                            
                         }
                     });
             },
@@ -414,10 +435,11 @@
                         }
                     }
                     axios.post(baseUrl + 'staff/need_verity_code', {
-                        phone
+                        value
                     }).then(fCallback);
                 }
             },
+            //真正的登录
             fLogin() {
                 let dict = {
                     name: 'staff/login_with_company_id'
@@ -439,30 +461,12 @@
                         } else {
                             window.location.reload()
                         }
-                    } else if (data.code === 999999) { // add code
-                        this.warningMessage = data.msg
-                        if (data.data.isValidateCodeLogin) {
-                            this.bShowCode = true
-                            this.fChangeCodeImg()
-                        } else {
-                            this.bShowCode = false
-                        }
-                        this.fChangeCodeImg()
-                    } else if (data.code === 999998) { // ip limit
-                        Cookies.set('token', data.data.token)
-                        Cookies.set('cid', data.data.companyId)
-                        Cookies.set('uid', data.data.id)
-                        this.$router.push('/ip_limit')
-                    } else if (data.code === 999997) { // password limit
-                        Cookies.set('token', data.data.token)
-                        Cookies.set('cid', data.data.companyId)
-                        Cookies.set('uid', data.data.id)
-                        this.passwordLimit.open = true
                     } else {
-                        this.warningMessage = data.msg
+
                     }
                 }
-                this.$http(dict, body, fCallback)
+                axios.post(baseUrl + 'staff/login_with_company_id', body)
+                    .then(fCallback);
             }
         },
         watch: {

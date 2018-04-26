@@ -1,12 +1,11 @@
 {
-  "name": "electron-quick-start",
+  "name": "hm_crm_client",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "函木科技草莓卷客户端",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
-  "repository": "https://github.com/electron/electron-quick-start",
   "keywords": [
     "Electron",
     "quick",
@@ -14,13 +13,21 @@
     "tutorial",
     "demo"
   ],
-  "author": "GitHub",
+  "author": "函木科技",
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^1.8.4"
   },
-  "dependencies": {
-    "iview": "^2.13.1",
-    "vue": "^2.5.16"
+  "build": {
+    "productName": "草莓卷 上海唯一视觉",
+    "mac": {
+      "icon": "build/icons/icon.icns"
+    },
+    "win": {
+      "icon": "build/icons/icon.ico"
+    },
+    "linux": {
+      "icon": "build/icons"
+    }
   }
 }

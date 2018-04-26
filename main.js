@@ -9,12 +9,10 @@ const {
 } = require('electron')
 const electron = require('electron')
 
-
-
 const path = require('path')
 const url = require('url')
 
-
+//debug模式
 const debugModel = true;
 
 //页面地址
@@ -34,29 +32,45 @@ let websocketWindow = null;
 let displayHeight;
 let displayWidth;
 
-//所有全局共享的变量
-let nowreceiveKZInfo;
-let companyInfo;
-let userInfo;
+/**
+ * 所有全局共享的变量
+ */
+let commonVar = {
+	//当前收到的客资信息
+	nowReceiveKZInfo: '',
+	//公司信息
+	companyInfo: '',
+	//用户信息
+	userInfo: '',
+	//当前登录信息
+	nowLoginInfo: ''
+}
 
 
-function opneIpcMsg(params) {
-	const receiveKZInfo = 'open-kz-info';
-	const wantCompanyInfo = 'get-company-info';
-	//当收到Webscoket的消息时
-	ipcMain.on(receiveKZInfo, (event, arg) => {
+/**
+ *监听消息事件
+ */
+function opneIpcMsg() {
+	//当收到Webscoket的打开客资到来消息的时候
+	ipcMain.on('request-open-kz-window', (event, arg) => {
+		commonVar.nowReceiveKZInfo = arg;
 		//打开窗口
-		nowreceiveKZInfo = arg;
-		new Notification({
-			title:"111",
-			body:"123123122"
-		});
 		createMsgAlertWindow(arg);
 	})
+	//收到想要获取当前客资信息的请求
+	ipcMain.on('request-get-now-receive-kz-info', (event, arg) => {
+		//同步返回
+		event.returnValue = commonVar.nowReceiveKZInfo;
+	})
 	//当收到请求获取公司信息时
-	ipcMain.on(wantCompanyInfo, (event, arg) => {
+	ipcMain.on('request-get-company-info', (event, arg) => {
 		//发送一个通知
-		event.sender.send('send-company-info', arg)
+		event.sender.send('response-get-company-info', arg)
+	})
+	//收到登录成功的请求时
+	ipcMain.on('request-login-success', (event, arg) => {
+		//打开websockt监听
+		//打开主界面
 	})
 }
 
@@ -64,22 +78,25 @@ function opneIpcMsg(params) {
  * 创建系统窗口
  */
 function createWindow() {
-	const displays = electron.screen.getAllDisplays()
-	displayHeight = displays[0].workAreaSize.height
-	displayWidth = displays[0].workAreaSize.width
-	// createLoginWindow();
+	const displays = electron.screen.getAllDisplays();
+	displayHeight = displays[0].workAreaSize.height;
+	displayWidth = displays[0].workAreaSize.width;
+	//监听消息
+	opneIpcMsg();
+	createLoginWindow();
 	// createMainWindow();
 	// createTray();
 	// createMsgAlertWindow();
-	createWebSocketWindow();
-	opneIpcMsg();
+	// createWebSocketWindow();
+
 }
 
 /**
  * 系统托盘
  */
 function createTray() {
-	tray = new Tray('app/static/icons/icon.ico')
+	let icon = path.join(__dirname, 'app/static/icons/icon.ico');
+	tray = new Tray(icon)
 	const contextMenu = Menu.buildFromTemplate([{
 			label: '注销',
 			click: function (event) {
@@ -96,8 +113,8 @@ function createTray() {
 	tray.setToolTip('This is my application.')
 	tray.setContextMenu(contextMenu)
 	tray.on('click', (e) => {
-		if (loginWin && loginWin.isVisible()) {
-			loginWin.show()
+		if (mainWindow && mainWindow.isVisible()) {
+			mainWindow.show()
 		}
 		// win = null
 	})
@@ -109,7 +126,7 @@ function createTray() {
 function createLoginWindow() {
 	// 创建浏览器窗口。
 	loginWindow = new BrowserWindow({
-		height: 480,
+		height: 520,
 		width: 360,
 		title: '草莓卷',
 		// resizable: false,
@@ -127,7 +144,7 @@ function createLoginWindow() {
 		//无边框
 		// frame: false,
 		//是否在任务栏中显示窗口
-		skipTaskbar: true,
+		skipTaskbar: false,
 		backgroundColor: '#FFF',
 		webPreferences: {
 			devTools: true,
@@ -151,14 +168,21 @@ function createLoginWindow() {
 		e.returnValue = false // 相当于 `return false` ，但是不推荐使用
 	}
 	//当关闭触发
+	let confirmClose = false;
 	loginWindow.on('close', (event) => {
-		event.preventDefault()
-		dialog.showMessageBox(loginWindow, {
-			message: '确定关闭草莓卷吗？',
-			buttons: ['取消', '确定']
-		}, (index) => {
-
-		});
+		if (!confirmClose) {
+			event.preventDefault()
+			dialog.showMessageBox(loginWindow, {
+				title: "提示",
+				message: '确定关闭草莓卷吗？',
+				buttons: ['取消', '确定']
+			}, (index) => {
+				if (index == 1) {
+					confirmClose = true;
+					loginWindow.close();
+				}
+			});
+		}
 	})
 	// 当 window 被关闭，这个事件会被触发。
 	loginWindow.on('closed', () => {
