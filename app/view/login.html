@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>草莓卷</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./../static/js/axios.js"></script>
+    <script src="./../static/js/vue.js"></script>
+    <script src="./../static/js/iview.js"></script>
+    <link rel="stylesheet" href="./../static/css/init.css">
+    <link rel="stylesheet" href="./../static/css/iview.css">
+    <style>
+        .win-class {
+            width: 100%;
+            height: 100%;
+        }
+
+        .login-pannle {
+            width: 92%;
+            height: 100%;
+            margin: 0 4%;
+        }
+
+        .company-img {
+            width: 100%;
+            height: 150px;
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-width: 1400px;
+            overflow: hidden;
+        }
+
+        .inner {
+            position: relative;
+            width: 1400px;
+            height: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            flex: 0 0 auto;
+            height: 110px;
+        }
+
+        .header img {
+            float: left;
+            height: 60px;
+            margin-top: 25px;
+        }
+
+        .header span {
+            float: left;
+            margin: 50px;
+            font-size: 16px;
+            color: #000;
+        }
+
+        .content {
+            flex: 1 0 auto;
+        }
+
+        .content_background {
+            position: absolute;
+            z-index: -1;
+            height: 600px;
+            top: 0;
+            left: 50%;
+            margin-left: -960px;
+        }
+
+        .main_text {
+            position: absolute;
+            top: 130px;
+            left: 50%;
+            color: #FFF;
+            font-size: 30px;
+            margin-left: -684px;
+            line-height: 58px;
+            font-weight: 500;
+        }
+
+        .main_text_data {
+            font-size: 24px;
+        }
+
+        .login_box {
+            float: right;
+            margin-top: 80px;
+            margin-right: 212px;
+            padding: 28px;
+            width: 348px;
+            background: #FFF;
+            border-radius: 2px;
+        }
+
+        .select_company_title {
+            text-align: center;
+            color: #43484c;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .select_company_main {
+            position: relative;
+        }
+
+        .last_company {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            cursor: pointer;
+        }
+
+        .next_company {
+            position: absolute;
+            top: 20px;
+            right: 0;
+            cursor: pointer;
+        }
+
+        .select_company_show {
+            overflow: hidden;
+            width: 292px;
+            height: 68px;
+        }
+
+        .select_company_all {
+            position: relative;
+            transition: all 0.5s;
+            width: 460px;
+            top: 0;
+            left: 8px;
+        }
+
+        .select_company_all li {
+            float: left;
+            width: 60px;
+            height: 46px;
+            margin: 10px 16px;
+            text-align: center;
+            opacity: 0.8;
+            cursor: pointer;
+            transition: all 0.5s;
+            border-radius: 2px;
+        }
+
+        .select_company_all li img {
+            width: 46px;
+        }
+
+        .select_company_all .company_selected {
+            transform: scale(1.4);
+            opacity: 1;
+        }
+
+        .select_company_name {
+            text-align: center;
+            color: #73787c;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .company_img {
+            background: #5b95f9;
+        }
+
+        .main_bottom {
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .footer p {
+            font-size: 11px;
+            text-align: center;
+            color: #ababab;
+        }
+
+        .footer p a {
+            color: #5685F7;
+            text-decoration: none;
+            padding: 0 2px;
+        }
+
+        .footer .verticalbar {
+            color: #999;
+            padding: 0 6px;
+        }
+
+        .warn-msg {
+            color: red;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="win-class">
+        <div class="company-img">
+            <img src="" alt="">
+        </div>
+        <div class="login-pannle">
+            <div v-if="!bShowChoseCompany">
+                <i-Form :model="userInfo" :rules="ruleInline" ref="formInline">
+                    <Form-Item prop="user">
+                        <i-Input type="text" size="large" :maxlength="11" v-model="userInfo.user" style="margin-top: 16px;">
+                            <Icon type="person" slot="prepend"></Icon>
+                        </i-Input>
+                    </Form-Item>
+                    <Form-Item prop="password">
+                        <i-Input type="password" size="large" v-model="userInfo.password" style="margin-top: 16px;">
+                            <Icon type="locked" slot="prepend"></Icon>
+                        </i-Input>
+                    </Form-Item>
+                    <div v-if="bShowCode" style="position: relative;margin-top: 16px;">
+                        <i-Input type="text" v-model="userInfo.code" size="large" style="width: 200px;">
+                            <span slot="prepend">验证码</span>
+                        </i-Input>
+                        <img @click="fChangeCodeImg" :src="codeImg" style="vertical-align: bottom;height: 36px;position: absolute;right: 0;top: 1px;"
+                            alt="">
+                    </div>
+                </i-Form>
+            </div>
+            <div v-if="bShowChoseCompany" class="select_company">
+                <p class="select_company_title">请确认登录的公司</p>
+                <div class="select_company_main">
+                    <span @click="fChooseLastCompany" class="last_company">
+                        <Icon type="chevron-left"></Icon>
+                    </span>
+                    <span @click="fChooseNextCompany" class="next_company">
+                        <Icon type="chevron-right"></Icon>
+                    </span>
+                    <div class="select_company_show">
+                        <ul class="select_company_all" :style="{left: companyBoxLeft+'px',width: 92*companyList.length + 'px'}">
+                            <li v-for="(item,index) in companyList" @click="fChooseCompany(index)" :class="(-index*92+116)===companyBoxLeft?'company_img company_selected': 'company_img'">
+                                <img v-if="item.img" :src="item.img" style="width:100%;margin-top: 10px;" alt="">
+                                <img v-else="!item.img" src="http://hmcrm.oss-cn-hangzhou.aliyuncs.com/beidou/icon_flag/companyIcon.png" alt="">
+                            </li>
+                        </ul>
+                    </div>
+                    <p class="select_company_name" v-text="selectedCompany.name"></p>
+                </div>
+            </div>
+            <div v-if="!!errorMsg" class="warn-msg">{{errorMsg}}</div>
+            <i-Button type="primary" size="large" @click="handleSubmit('formInline')" long style="margin-top: 30px;margin-bottom: 10px;">
+                立即登录
+            </i-Button>
+        </div>
+        <div class="footer">
+            <p>&copy; {{new Date().getFullYear()}} power by
+                <a href="https://qiein.com/">草莓卷</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+
+<script>
+    let baseUrl = 'http://114.55.249.156:9090/';
+    var app = new Vue({
+        el: '#app',
+        data: {
+            userInfo: {
+                user: '',
+                password: '',
+                code: ''
+            },
+            bForgetIsShow: false,
+            bImgShow: false,
+            errorMsg: '',
+            bShowCode: false,
+            bShowChoseCompany: false,
+            codeImg: '',
+            companyBoxLeft: 0,
+            companyList: [],
+            selectedCompany: '',
+            passwordLimit: {
+                open: false
+            },
+            ruleInline: {
+                user: [{
+                    required: true,
+                    message: '请输入用户名',
+                    trigger: 'blur'
+                }, {
+                    trigger: 'blur',
+                    validator: function (rule, value, call) {
+                        let phoneReg = /^(13|14|15|16|17|18|19)\d{9}$/
+                        if (!phoneReg.test(value)) {
+                            call(new Error('请输入正确的手机号码'));
+                        }
+                    }
+                }],
+                password: [{
+                        required: true,
+                        message: '请输入密码',
+                        trigger: 'blur'
+                    },
+                    {
+                        type: 'string',
+                        min: 6,
+                        message: '密码至少6位数',
+                        trigger: 'blur'
+                    }
+                ]
+            }
+        },
+        methods: {
+            fDoLogin() {
+                let phoneReg = /^(13|14|15|16|17|18|19)\d{9}$/
+                this.userInfo.user = this.userInfo.user.trim()
+                this.userInfo.password = this.userInfo.password.trim()
+                if (!phoneReg.test(this.userInfo.user)) {
+                    this.warningMessage = '请输入正确的手机号码'
+                    return false;
+                }
+                if (!this.userInfo.password) {
+                    this.warningMessage = '请输入密码'
+                    return false;
+                }
+                if (!this.userInfo.code && this.bShowCode) {
+                    this.userInfo.code = this.userInfo.code.trim()
+                    this.warningMessage = '请输入验证码'
+                    return false;
+                }
+                this.warningMessage = ''
+                if (this.selectedCompany.id) {
+                    this.fLogin()
+                } else {
+                    this.fGetCompanyList()
+                }
+            },
+            //处理登录验证
+            handleSubmit(name) {
+                this.fGetCompanyList();
+            },
+            //获取公司列表
+            fGetCompanyList() {
+                let body = {
+                    userName: this.userInfo.user,
+                    password: this.userInfo.password,
+                    verifyCode: this.userInfo.code
+                }
+                axios.post(baseUrl + 'staff/get_company_list', body)
+                    .then((res) => {
+                        let data = res.data;
+                        if (data.code === 100000) {
+                            if (data.data.length === 1) {
+                                this.selectedCompany.id = data.data[0].id
+                                this.fLogin()
+                            } else {
+                                this.companyList = data.data.map(item => {
+                                    return {
+                                        name: item.companyName,
+                                        id: item.id,
+                                        img: item.logo
+                                    }
+                                })
+                                this.companyBoxLeft = 116
+                                this.bShowChoseCompany = true
+                                this.errorMsg = '';
+                            }
+                        } else {
+                            this.errorMsg = data.msg;
+                        }
+                    });
+            },
+            //选择上一个公司
+            fChooseLastCompany() {
+                if (this.companyBoxLeft < 116) {
+                    this.companyBoxLeft = this.companyBoxLeft + 92
+                }
+            },
+            //下一个公司
+            fChooseNextCompany() {
+                if (this.companyBoxLeft > (218 - 92 * this.companyList.length)) {
+                    this.companyBoxLeft = this.companyBoxLeft - 92
+                }
+            },
+            //选择公司
+            fChooseCompany(index) {
+                this.companyBoxLeft = 116 - index * 92
+            },
+            //改变验证码
+            fChangeCodeImg() {
+                this.userInfo.code = ''
+                let timestamp = (new Date()).valueOf()
+                this.codeImg = baseUrl + '/staff/verify_code?phone=' + this.userInfo.user + '&timestamp=' +
+                    timestamp
+            },
+            fUserBlur() {
+                this.userInfo.user = this.userInfo.user.trim()
+                let phoneReg = /^(13|14|15|16|17|18|19)\d{9}$/
+                let value = this.userInfo.user
+                if (phoneReg.test(value)) {
+                    const fCallback = data => {
+                        if (data) {
+                            this.bShowCode = true
+                            this.fChangeCodeImg()
+                        } else {
+                            this.bShowCode = false
+                        }
+                    }
+                    axios.post(baseUrl + 'staff/need_verity_code', {
+                        phone
+                    }).then(fCallback);
+                }
+            },
+            fLogin() {
+                let dict = {
+                    name: 'staff/login_with_company_id'
+                }
+                let body = {
+                    username: this.userInfo.user,
+                    password: this.userInfo.password,
+                    code: this.userInfo.code,
+                    companyId: this.selectedCompany.id
+                }
+                const fCallback = data => {
+                    this.bShowCode = false
+                    if (data.code === 100000) { //success
+                        if (this.userInfo.user === data.data.phone) {
+                            Cookies.set('token', data.data.token)
+                            Cookies.set('cid', data.data.companyId)
+                            Cookies.set('uid', data.data.id)
+                            this.$router.push('/login/back')
+                        } else {
+                            window.location.reload()
+                        }
+                    } else if (data.code === 999999) { // add code
+                        this.warningMessage = data.msg
+                        if (data.data.isValidateCodeLogin) {
+                            this.bShowCode = true
+                            this.fChangeCodeImg()
+                        } else {
+                            this.bShowCode = false
+                        }
+                        this.fChangeCodeImg()
+                    } else if (data.code === 999998) { // ip limit
+                        Cookies.set('token', data.data.token)
+                        Cookies.set('cid', data.data.companyId)
+                        Cookies.set('uid', data.data.id)
+                        this.$router.push('/ip_limit')
+                    } else if (data.code === 999997) { // password limit
+                        Cookies.set('token', data.data.token)
+                        Cookies.set('cid', data.data.companyId)
+                        Cookies.set('uid', data.data.id)
+                        this.passwordLimit.open = true
+                    } else {
+                        this.warningMessage = data.msg
+                    }
+                }
+                this.$http(dict, body, fCallback)
+            }
+        },
+        watch: {
+            companyBoxLeft() {
+                let index = (116 - this.companyBoxLeft) / 92
+                this.selectedCompany = JSON.parse(JSON.stringify(this.companyList[index]))
+            }
+        }
+    });
+</script>
+
+</html>
