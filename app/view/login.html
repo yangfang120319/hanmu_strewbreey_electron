@@ -242,8 +242,8 @@
                         </i-Input>
                     </Form-Item>
                     <div v-if="bShowCode" style="position: relative;">
-                        <Form-Item>
-                            <i-Input type="text" v-model="userInfo.code" size="large"  :maxlength="11">
+                        <Form-Item prop="verifyCode">
+                            <i-Input type="text" v-model="userInfo.code" size="large" :maxlength="4">
                                 <span slot="prepend">验证码</span>
                             </i-Input>
                         </Form-Item>
@@ -286,6 +286,12 @@
 
 
 <script>
+    //获取当前窗口
+    const remote = require('electron').remote
+    const {
+        ipcRenderer
+    } = require('electron')
+    const currentWindow = remote.getCurrentWindow()
     let baseUrl = 'http://114.55.249.156:9090/';
     var app = new Vue({
         el: '#app',
@@ -332,7 +338,17 @@
                         message: '密码至少6位数',
                         trigger: 'blur'
                     }
-                ]
+                ],
+                verifyCode: [{
+                    required: true,
+                    message: '请输入验证码',
+                    trigger: 'blur'
+                }]
+            }
+        },
+        created: function () {
+            if (localStorage.loginUserName) {
+                this.userInfo.user = localStorage.loginUserName;
             }
         },
         methods: {
@@ -394,7 +410,7 @@
                         } else {
                             this.errorMsg = data.msg;
                             this.fUserBlur();
-                            
+
                         }
                     });
             },
@@ -427,16 +443,15 @@
                 let value = this.userInfo.user
                 if (phoneReg.test(value)) {
                     const fCallback = data => {
-                        if (data) {
+                        if (data.data) {
                             this.bShowCode = true
                             this.fChangeCodeImg()
                         } else {
                             this.bShowCode = false
                         }
                     }
-                    axios.post(baseUrl + 'staff/need_verity_code', {
-                        value
-                    }).then(fCallback);
+                    axios.get(baseUrl + 'staff/need_verity_code?phone=' + value)
+                        .then(fCallback);
                 }
             },
             //真正的登录
@@ -452,17 +467,18 @@
                 }
                 const fCallback = data => {
                     this.bShowCode = false
+                    data = data.data;
                     if (data.code === 100000) { //success
                         if (this.userInfo.user === data.data.phone) {
-                            Cookies.set('token', data.data.token)
-                            Cookies.set('cid', data.data.companyId)
-                            Cookies.set('uid', data.data.id)
-                            this.$router.push('/login/back')
+                            localStorage.loginUserName = this.userInfo.user;
+                            //发送线程消息
+                            ipcRenderer.send('request-login-success', data.data)
+                            currentWindow.close();
                         } else {
                             window.location.reload()
                         }
                     } else {
-
+                        //登录失败
                     }
                 }
                 axios.post(baseUrl + 'staff/login_with_company_id', body)

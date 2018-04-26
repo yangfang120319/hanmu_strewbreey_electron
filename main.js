@@ -17,7 +17,7 @@ const debugModel = true;
 
 //页面地址
 const LOGIN_WINDOW_URL = 'app/view/login.html';
-const MAIN_WINDOW_URL = '';
+const MAIN_WINDOW_URL = 'http://114.55.249.156/login/';
 const MSG_ALERT_WINDOW = 'app/view/alert.html';
 const WEBSOCKET_WINDOW = 'app/view/websocket.html';
 
@@ -69,8 +69,12 @@ function opneIpcMsg() {
 	})
 	//收到登录成功的请求时
 	ipcMain.on('request-login-success', (event, arg) => {
+		commonVar.nowLoginInfo = arg;
 		//打开websockt监听
+		createWebSocketWindow();
 		//打开主界面
+		createMainWindow();
+		createTray();
 	})
 }
 
@@ -84,11 +88,6 @@ function createWindow() {
 	//监听消息
 	opneIpcMsg();
 	createLoginWindow();
-	// createMainWindow();
-	// createTray();
-	// createMsgAlertWindow();
-	// createWebSocketWindow();
-
 }
 
 /**
@@ -98,25 +97,23 @@ function createTray() {
 	let icon = path.join(__dirname, 'app/static/icons/icon.ico');
 	tray = new Tray(icon)
 	const contextMenu = Menu.buildFromTemplate([{
-			label: '注销',
-			click: function (event) {
-				createLoginWindow();
-			}
-		},
-		{
-			label: '退出',
-			click: function (event) {
-				tray.destroy()
-			}
+		label: '注销',
+		click: function (event) {
+			reLogin();
 		}
-	])
+	}, {
+		label: '退出',
+		click: function (event) {
+			//关闭所有
+			exitProgram();
+		}
+	}])
 	tray.setToolTip('This is my application.')
 	tray.setContextMenu(contextMenu)
 	tray.on('click', (e) => {
-		if (mainWindow && mainWindow.isVisible()) {
-			mainWindow.show()
+		if (mainWindow && mainWindow.isVisible() && !mainWindow.isFocused()) {
+			mainWindow.focus();
 		}
-		// win = null
 	})
 }
 
@@ -163,27 +160,7 @@ function createLoginWindow() {
 	if (debugModel) {
 		loginWindow.webContents.openDevTools()
 	}
-	//当关闭之前
-	loginWindow.onbeforeunload = (e) => {
-		e.returnValue = false // 相当于 `return false` ，但是不推荐使用
-	}
-	//当关闭触发
-	let confirmClose = false;
-	loginWindow.on('close', (event) => {
-		if (!confirmClose) {
-			event.preventDefault()
-			dialog.showMessageBox(loginWindow, {
-				title: "提示",
-				message: '确定关闭草莓卷吗？',
-				buttons: ['取消', '确定']
-			}, (index) => {
-				if (index == 1) {
-					confirmClose = true;
-					loginWindow.close();
-				}
-			});
-		}
-	})
+
 	// 当 window 被关闭，这个事件会被触发。
 	loginWindow.on('closed', () => {
 		loginWindow = null;
@@ -215,20 +192,49 @@ function createWebSocketWindow() {
  * 创建主窗口
  */
 function createMainWindow() {
+	let urlParam = `${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.cid}_${commonVar.nowLoginInfo.uid}`;
 	mainWindow = new BrowserWindow({
-		width: 800,
-		height: 600,
+		width: 1024,
+		height: 768,
 		show: false,
 	})
-	mainWindow.loadURL(MAIN_WINDOW_URL);
+	//最大化
+	mainWindow.maximize();
+	//装载网页
+	mainWindow.loadURL(MAIN_WINDOW_URL + urlParam);
+	//可以显示时
+	mainWindow.once('ready-to-show', () => {
+		mainWindow.show()
+	})
 	mainWindow.on('closed', function () {
 		console.log('窗口关闭')
 		mainWindow = null
 	})
 	// 打开开发者工具。
 	if (debugModel) {
-		msgAlertWindow.webContents.openDevTools()
+		mainWindow.webContents.openDevTools()
 	}
+	//当关闭之前
+	mainWindow.onbeforeunload = (e) => {
+		e.returnValue = false // 相当于 `return false` ，但是不推荐使用
+	}
+	mainWindow.on('restore', (event) => {
+		console.log('1321');
+	})
+	//当关闭触发
+	mainWindow.on('close', (event) => {
+		event.preventDefault()
+		dialog.showMessageBox(mainWindow, {
+			title: "提示",
+			message: '确定关闭草莓卷吗？',
+			buttons: ['取消', '确定']
+		}, (index) => {
+			if (index == 1) {
+				mainWindow.destroy();
+				exitProgram();
+			}
+		});
+	})
 }
 
 /**
@@ -283,7 +289,6 @@ function createMsgAlertWindow(param) {
 		msgAlertWindow.webContents.openDevTools()
 	}
 }
-
 /**
  * 创建
  */
@@ -298,8 +303,67 @@ app.on('window-all-closed', function () {
 	}
 })
 
-// app.on('activate', function () {
-// 	if (mainWindow === null) {
-// 		createWindow()
-// 	}
-// })
+/**
+ * 关闭进程
+ */
+function exitProgram() {
+	if (tray) {
+		tray.destroy();
+	}
+	if (loginWindow) {
+		loginWindow.destroy();
+	}
+	if (mainWindow) {
+		mainWindow.destroy();
+	}
+	if (msgAlertWindow) {
+		msgAlertWindow.destroy();
+	}
+	if (websocketWindow) {
+		websocketWindow.destroy();
+	}
+	app.quit();
+}
+/**
+ *重新登录
+ */
+function reLogin() {
+	createLoginWindow();
+	if (tray) {
+		tray.destroy();
+	}
+	if (mainWindow) {
+		mainWindow.destroy();
+	}
+	if (msgAlertWindow) {
+		msgAlertWindow.destroy();
+	}
+	if (websocketWindow) {
+		websocketWindow.destroy();
+	}
+}
+
+app.on('activate', function () {
+	if (loginWindow === null) {
+		createLoginWindow();
+	}
+})
+
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+	//若最小化则还原
+	if (loginWindow) {
+		if (loginWindow.isMinimized()) {
+			loginWindow.restore();
+		}
+		loginWindow.focus();
+	}
+	if (mainWindow) {
+		if (mainWindow.isMinimized()) {
+			mainWindow.restore();
+		}
+		mainWindow.focus();
+	}
+});
+if (shouldQuit) {
+	app.quit();
+}
