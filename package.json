@@ -4,7 +4,8 @@
   "description": "函木科技草莓卷客户端",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder ."
   },
   "keywords": [
     "Electron",
@@ -19,7 +20,7 @@
     "electron": "^1.8.4"
   },
   "build": {
-    "productName": "草莓卷 上海唯一视觉",
+    "productName": "草莓卷",
     "mac": {
       "icon": "build/icons/icon.icns"
     },

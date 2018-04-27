@@ -13,6 +13,22 @@ exports.getAppPath = function getAppPath() {
     return path;
 }
 
+/**
+ * 获取用户安装配置文件目录
+ */
+exports.getConfigPath = function getConfigPath() {
+    let path = app.getPath('userData');
+    return path;
+}
+
+/**
+ * 获取日志目录
+ */
+exports.getLogPath = function getLogPath() {
+    let path = app.getPath('logs');
+    return path;
+}
+
 
 /**
  * 格式化时间

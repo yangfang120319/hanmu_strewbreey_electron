@@ -59,6 +59,7 @@ let commonSet = {
  */
 
 function initProgram() {
+	if (checkSingle()) return;
 	const displays = electron.screen.getAllDisplays();
 	displayHeight = displays[0].workAreaSize.height;
 	displayWidth = displays[0].workAreaSize.width;
@@ -223,7 +224,7 @@ function createWebSocketWindow() {
  * 创建主窗口
  */
 function createMainWindow() {
-	let urlParam = `${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.cid}_${commonVar.nowLoginInfo.uid}`;
+	let urlParam = `${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}`;
 	mainWindow = new BrowserWindow({
 		// width: 1024,
 		// height: 768,
@@ -395,21 +396,25 @@ app.on('activate', function () {
 /**
  * 检测是否单例运行
  */
-const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
-	//若最小化则还原
-	if (loginWindow) {
-		if (loginWindow.isMinimized()) {
-			loginWindow.restore();
+
+function checkSingle() {
+	const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+		//若最小化则还原
+		if (loginWindow) {
+			if (loginWindow.isMinimized()) {
+				loginWindow.restore();
+			}
+			loginWindow.focus();
 		}
-		loginWindow.focus();
-	}
-	if (mainWindow) {
-		if (mainWindow.isMinimized()) {
-			mainWindow.restore();
+		if (mainWindow) {
+			if (mainWindow.isMinimized()) {
+				mainWindow.restore();
+			}
+			mainWindow.focus();
 		}
-		mainWindow.focus();
+	});
+	if (shouldQuit) {
+		app.quit();
 	}
-});
-if (shouldQuit) {
-	app.quit();
+	return shouldQuit;
 }

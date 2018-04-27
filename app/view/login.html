@@ -220,11 +220,15 @@
             z-index: 100;
             border-left: 1px solid #e2e2e2;
         }
+
+        [v-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
-    <div id="app" class="win-class">
+    <div id="app" class="win-class" v-cloak>
         <div class="company-img">
             <img src="../static/icons/256x256.png" alt="" width="80px" height="80px">
         </div>
@@ -350,6 +354,7 @@
             if (localStorage.loginUserName) {
                 this.userInfo.user = localStorage.loginUserName;
             }
+
         },
         methods: {
             fDoLogin() {
@@ -410,7 +415,7 @@
                         } else {
                             this.errorMsg = data.msg;
                             this.fUserBlur();
-
+                            alert(data.msg)
                         }
                     });
             },
@@ -479,6 +484,7 @@
                         }
                     } else {
                         //登录失败
+                        alert(data.msg)
                     }
                 }
                 axios.post(baseUrl + 'staff/login_with_company_id', body)

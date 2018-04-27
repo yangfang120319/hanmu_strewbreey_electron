@@ -6,10 +6,10 @@ const path = require('path')
 const util = require('./util')
 const fs = require('fs-extra')
 
-const appPath = util.getAppPath();
+const logPath = util.getLogPath();
 
 //日志目录
-const logDir = appPath + path.sep + '/log';
+const logDir = logPath + path.sep;
 
 //日志级别
 const level = {
@@ -24,7 +24,7 @@ const level = {
  */
 function getLogFileName() {
     let date = util.formatDate(new Date());
-    return `${logDir}${path.sep}${date}.log`;
+    return `${logDir}${date}.log`;
 }
 
 /**

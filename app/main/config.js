@@ -6,9 +6,9 @@ const fs = require('fs-extra')
 const util = require('./util')
 
 
-let appPath = util.getAppPath();
+let configPath = util.getConfigPath();
 //用户设置保存位置
-const userSetPath = appPath + path.sep + 'config' + path.sep + 'user-set.json';
+const userSetPath = configPath + path.sep + 'config' + path.sep + 'user-set.json';
 
 /**
  * 保存用户设置
