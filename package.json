@@ -29,5 +29,8 @@
     "linux": {
       "icon": "build/icons"
     }
+  },
+  "dependencies": {
+    "fs-extra": "^5.0.0"
   }
 }

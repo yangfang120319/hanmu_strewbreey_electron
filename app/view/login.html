@@ -237,13 +237,13 @@
                         </i-Input>
                     </Form-Item>
                     <Form-Item prop="password">
-                        <i-Input type="password" size="large" v-model="userInfo.password">
+                        <i-Input type="password" size="large" v-model="userInfo.password" @on-enter="fDoLogin">
                             <Icon type="locked" slot="prepend"></Icon>
                         </i-Input>
                     </Form-Item>
                     <div v-if="bShowCode" style="position: relative;">
                         <Form-Item prop="verifyCode">
-                            <i-Input type="text" v-model="userInfo.code" size="large" :maxlength="4">
+                            <i-Input type="text" v-model="userInfo.code" size="large" :maxlength="4" @on-enter="fDoLogin">
                                 <span slot="prepend">验证码</span>
                             </i-Input>
                         </Form-Item>

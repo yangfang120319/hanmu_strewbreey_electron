@@ -5,10 +5,12 @@ const {
 	dialog,
 	BrowserWindow,
 	ipcMain,
+	session,
 	Notification
 } = require('electron')
 const electron = require('electron')
-
+const log = require('./app/main/log-util');
+const config = require('./app/main/config');
 const path = require('path')
 const url = require('url')
 
@@ -46,7 +48,34 @@ let commonVar = {
 	nowLoginInfo: ''
 }
 
+//公共的设置
+let commonSet = {
+	allowMini: false
+}
 
+
+/**
+ * 初始化程序
+ */
+
+function initProgram() {
+	const displays = electron.screen.getAllDisplays();
+	displayHeight = displays[0].workAreaSize.height;
+	displayWidth = displays[0].workAreaSize.width;
+	//监听消息
+	try {
+		//读取用户配置文件
+		let userConfig = config.getUserSet();
+		if (userConfig) {
+			commonSet = userConfig;
+		}
+		opneIpcMsg();
+		createLoginWindow();
+		log.info('程序启动成功...');
+	} catch (error) {
+		log.error(error);
+	}
+}
 /**
  *监听消息事件
  */
@@ -79,40 +108,42 @@ function opneIpcMsg() {
 }
 
 /**
- * 创建系统窗口
- */
-function createWindow() {
-	const displays = electron.screen.getAllDisplays();
-	displayHeight = displays[0].workAreaSize.height;
-	displayWidth = displays[0].workAreaSize.width;
-	//监听消息
-	opneIpcMsg();
-	createLoginWindow();
-}
-
-/**
  * 系统托盘
  */
 function createTray() {
 	let icon = path.join(__dirname, 'app/static/icons/icon.ico');
 	tray = new Tray(icon)
 	const contextMenu = Menu.buildFromTemplate([{
+		label: '最小化隐藏',
+		type: 'checkbox',
+		//为用户自定义的配置
+		checked: commonSet.allowMini,
+		click: function (menuItem, browserWindow, event) {
+			commonSet.allowMini = !commonSet.allowMini;
+		}
+	}, {
 		label: '注销',
 		click: function (event) {
 			reLogin();
 		}
 	}, {
 		label: '退出',
-		click: function (event) {
-			//关闭所有
-			exitProgram();
-		}
+		role: 'quit',
+		// click: function (event) {
+		// 	//关闭所有
+		// 	exitProgram();
+		// }
 	}])
-	tray.setToolTip('This is my application.')
+	tray.setToolTip('草莓卷客户端');
 	tray.setContextMenu(contextMenu)
 	tray.on('click', (e) => {
-		if (mainWindow && mainWindow.isVisible() && !mainWindow.isFocused()) {
-			mainWindow.focus();
+		if (mainWindow) {
+			if (mainWindow.isMinimized() && mainWindow.isVisible()) {
+				mainWindow.focus();
+			} else {
+				mainWindow.maximize();
+				mainWindow.focus();
+			}
 		}
 	})
 }
@@ -194,9 +225,10 @@ function createWebSocketWindow() {
 function createMainWindow() {
 	let urlParam = `${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.cid}_${commonVar.nowLoginInfo.uid}`;
 	mainWindow = new BrowserWindow({
-		width: 1024,
-		height: 768,
+		// width: 1024,
+		// height: 768,
 		show: false,
+		title: "草莓卷客户端"
 	})
 	//最大化
 	mainWindow.maximize();
@@ -215,11 +247,18 @@ function createMainWindow() {
 		mainWindow.webContents.openDevTools()
 	}
 	//当关闭之前
-	mainWindow.onbeforeunload = (e) => {
-		e.returnValue = false // 相当于 `return false` ，但是不推荐使用
-	}
-	mainWindow.on('restore', (event) => {
-		console.log('1321');
+	// mainWindow.onbeforeunload = (e) => {
+	// 	e.returnValue = false // 相当于 `return false` ，但是不推荐使用
+	// }
+	//窗口最小化
+	mainWindow.on('minimize', (event) => {
+		event.preventDefault();
+		//只有当允许最小化时才最小化，否则隐藏
+		if (!commonSet.allowMini) {
+			mainWindow.minimize()
+		} else {
+			mainWindow.hide();
+		}
 	})
 	//当关闭触发
 	mainWindow.on('close', (event) => {
@@ -292,12 +331,15 @@ function createMsgAlertWindow(param) {
 /**
  * 创建
  */
-app.on('ready', createWindow)
+app.on('ready', initProgram);
 
 /**
  * 所有窗口关闭时
  */
 app.on('window-all-closed', function () {
+	log.info('程序退出...');
+	//保存下用户设置
+	config.saveUserSet(commonSet);
 	if (process.platform !== 'darwin') {
 		app.quit()
 	}
@@ -342,13 +384,17 @@ function reLogin() {
 		websocketWindow.destroy();
 	}
 }
-
+/**
+ * 苹果系统
+ */
 app.on('activate', function () {
 	if (loginWindow === null) {
 		createLoginWindow();
 	}
 })
-
+/**
+ * 检测是否单例运行
+ */
 const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
 	//若最小化则还原
 	if (loginWindow) {
