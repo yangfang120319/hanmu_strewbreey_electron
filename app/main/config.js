@@ -15,15 +15,16 @@ const userSetPath = configPath + path.sep + 'config' + path.sep + 'user-set.json
  * 
  * @param {*} data 
  */
-exports.saveUserSet = function saveUserSet(data) {
+exports.saveUserSet = (data) => {
     fs.outputJsonSync(userSetPath, data)
 }
 
 /**
  * 获取用户设置
  */
-exports.getUserSet = function getUserSet() {
+exports.getUserSet = () => {
     return fs.readJsonSync(userSetPath, {
         throws: false
     })
 }
+

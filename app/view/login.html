@@ -228,7 +228,7 @@
 </head>
 
 <body>
-    <div id="app" class="win-class" v-cloak>
+    <div id="app" class="win-class" v-cloak style="user-select: none;">
         <div class="company-img">
             <img src="../static/icons/256x256.png" alt="" width="80px" height="80px">
         </div>
@@ -290,13 +290,12 @@
 
 
 <script>
+    //url配置
+    const url = require("../main/url-config");
     //获取当前窗口
     const remote = require('electron').remote
-    const {
-        ipcRenderer
-    } = require('electron')
+    const ipcRenderer = require('electron').ipcRenderer
     const currentWindow = remote.getCurrentWindow()
-    let baseUrl = 'http://114.55.249.156:9090/';
     var app = new Vue({
         el: '#app',
         data: {
@@ -313,7 +312,7 @@
             codeImg: '',
             companyBoxLeft: 0,
             companyList: [],
-            selectedCompany: '',
+            selectedCompany: {},
             passwordLimit: {
                 open: false
             },
@@ -392,7 +391,7 @@
                     password: this.userInfo.password,
                     verifyCode: this.userInfo.code
                 }
-                axios.post(baseUrl + 'staff/get_company_list', body)
+                axios.post(url.getCompanyListUrl, body)
                     .then((res) => {
                         let data = res.data;
                         if (data.code === 100000) {
@@ -439,8 +438,8 @@
             fChangeCodeImg() {
                 this.userInfo.code = ''
                 let timestamp = (new Date()).valueOf()
-                this.codeImg = baseUrl + '/staff/verify_code?phone=' + this.userInfo.user + '&timestamp=' +
-                    timestamp
+                this.codeImg =
+                    `${url.getVerifyCode}?phone= ${this.userInfo.user}&timestamp=${timestamp}`;
             },
             fUserBlur() {
                 this.userInfo.user = this.userInfo.user.trim()
@@ -455,21 +454,19 @@
                             this.bShowCode = false
                         }
                     }
-                    axios.get(baseUrl + 'staff/need_verity_code?phone=' + value)
+                    axios.get(`${url.needVerifyCode}?phone= ${value}`)
                         .then(fCallback);
                 }
             },
             //真正的登录
             fLogin() {
-                let dict = {
-                    name: 'staff/login_with_company_id'
-                }
                 let body = {
                     username: this.userInfo.user,
                     password: this.userInfo.password,
                     code: this.userInfo.code,
                     companyId: this.selectedCompany.id
                 }
+                //回调
                 const fCallback = data => {
                     this.bShowCode = false
                     data = data.data;
@@ -487,7 +484,8 @@
                         alert(data.msg)
                     }
                 }
-                axios.post(baseUrl + 'staff/login_with_company_id', body)
+                //post
+                axios.post(url.loginWithCompanyId, body)
                     .then(fCallback);
             }
         },

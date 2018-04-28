@@ -14,12 +14,14 @@ const config = require('./app/main/config');
 const path = require('path')
 const url = require('url')
 
+const urlConfig = require('./app/main/url-config')
+
 //debug模式
 const debugModel = true;
 
 //页面地址
 const LOGIN_WINDOW_URL = 'app/view/login.html';
-const MAIN_WINDOW_URL = 'http://114.55.249.156/login/';
+const MAIN_WINDOW_URL = urlConfig.mainPageUrl;
 const MSG_ALERT_WINDOW = 'app/view/alert.html';
 const WEBSOCKET_WINDOW = 'app/view/websocket.html';
 
@@ -57,9 +59,12 @@ let commonSet = {
 /**
  * 初始化程序
  */
-
 function initProgram() {
-	if (checkSingle()) return;
+	//当检测已存在进程，则退出
+	if (checkSingle()) {
+		app.exit();
+		return;
+	}
 	const displays = electron.screen.getAllDisplays();
 	displayHeight = displays[0].workAreaSize.height;
 	displayWidth = displays[0].workAreaSize.width;
@@ -77,6 +82,7 @@ function initProgram() {
 		log.error(error);
 	}
 }
+
 /**
  *监听消息事件
  */
@@ -105,6 +111,14 @@ function opneIpcMsg() {
 		//打开主界面
 		createMainWindow();
 		createTray();
+	})
+	//收到重新登录的请求
+	ipcMain.on('request-relogin', (event, arg) => {
+		reLogin();
+	})
+	//收到退出系统的请求
+	ipcMain.on('request-exit-system', (event, arg) => {
+		exitProgram();
 	})
 }
 
@@ -158,7 +172,7 @@ function createLoginWindow() {
 		height: 520,
 		width: 360,
 		title: '草莓卷',
-		// resizable: false,
+		resizable: false,
 		maximizable: false,
 		fullscreen: false,
 		fullscreenable: false,
@@ -224,7 +238,7 @@ function createWebSocketWindow() {
  * 创建主窗口
  */
 function createMainWindow() {
-	let urlParam = `${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}`;
+	let urlParam = `/${commonVar.nowLoginInfo.token}_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}_true`;
 	mainWindow = new BrowserWindow({
 		// width: 1024,
 		// height: 768,
@@ -233,11 +247,13 @@ function createMainWindow() {
 	})
 	//最大化
 	mainWindow.maximize();
+
 	//装载网页
 	mainWindow.loadURL(MAIN_WINDOW_URL + urlParam);
 	//可以显示时
 	mainWindow.once('ready-to-show', () => {
-		mainWindow.show()
+		let webContent = mainWindow.webContents;
+		mainWindow.show();
 	})
 	mainWindow.on('closed', function () {
 		console.log('窗口关闭')
@@ -371,7 +387,9 @@ function exitProgram() {
  *重新登录
  */
 function reLogin() {
-	createLoginWindow();
+	if (loginWindow == null) {
+		createLoginWindow();
+	}
 	if (tray) {
 		tray.destroy();
 	}
