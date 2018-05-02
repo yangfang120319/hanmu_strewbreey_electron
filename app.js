@@ -9,21 +9,22 @@ const {
 	Notification
 } = require('electron')
 const electron = require('electron')
-const log = require('./app/main/log-util');
-const config = require('./app/main/config');
+const log = require('./src/main/log-util');
+const config = require('./src/main/config');
 const path = require('path')
 const url = require('url')
 
-const urlConfig = require('./app/main/url-config')
+const urlConfig = require('./src/main/url-config')
 
 //debug模式
 const debugModel = true;
 
 //页面地址
-const LOGIN_WINDOW_URL = 'app/view/login.html';
+const LOGIN_WINDOW_URL = 'src/view/login.html';
 const MAIN_WINDOW_URL = urlConfig.mainPageUrl;
-const MSG_ALERT_WINDOW = 'app/view/alert.html';
-const WEBSOCKET_WINDOW = 'app/view/websocket.html';
+const MSG_ALERT_WINDOW = 'src/view/alert.html';
+const WEBSOCKET_WINDOW = 'src/view/websocket.html';
+const TRAY_ICON = 'src/static/icons/icon.ico';
 
 //创建的所有窗口及图标
 let tray = null
@@ -65,6 +66,7 @@ function initProgram() {
 		app.exit();
 		return;
 	}
+	createNotification();
 	const displays = electron.screen.getAllDisplays();
 	displayHeight = displays[0].workAreaSize.height;
 	displayWidth = displays[0].workAreaSize.width;
@@ -83,6 +85,14 @@ function initProgram() {
 	}
 }
 
+function createNotification(params) {
+	let notification = new Notification({
+		title: '系统登陆',
+		body: '登陆'
+	});
+	notification.show();
+}
+
 /**
  *监听消息事件
  */
@@ -90,8 +100,12 @@ function opneIpcMsg() {
 	//当收到Webscoket的打开客资到来消息的时候
 	ipcMain.on('request-open-kz-window', (event, arg) => {
 		commonVar.nowReceiveKZInfo = arg;
+		//写入日志
+		log.info('新的客资消息:' + JSON.parse(arg));
 		//打开窗口
 		createMsgAlertWindow(arg);
+		//主窗口闪烁
+		mainWindow.flashFrame(true);
 	})
 	//收到想要获取当前客资信息的请求
 	ipcMain.on('request-get-now-receive-kz-info', (event, arg) => {
@@ -120,13 +134,21 @@ function opneIpcMsg() {
 	ipcMain.on('request-exit-system', (event, arg) => {
 		exitProgram();
 	})
+	//当点击了关闭领取客资的窗口时
+	ipcMain.on('request-close-receive-window', (event, arg) => {
+		log.info('主动关闭了领取客资窗口');
+	})
+	//当点击了领取按钮时
+	ipcMain.on('request-receive-kzinfo', (event, arg) => {
+		log.info('领取了客资');
+	})
 }
 
 /**
  * 系统托盘
  */
 function createTray() {
-	let icon = path.join(__dirname, 'app/static/icons/icon.ico');
+	let icon = path.join(__dirname, TRAY_ICON);
 	tray = new Tray(icon)
 	const contextMenu = Menu.buildFromTemplate([{
 		label: '最小化隐藏',
@@ -228,6 +250,12 @@ function createWebSocketWindow() {
 		protocol: 'file:',
 		slashes: true
 	}))
+
+	// 打开开发者工具。
+	if (debugModel) {
+		websocketWindow.webContents.openDevTools()
+	}
+
 	websocketWindow.on('closed', function () {
 		console.log('窗口关闭')
 		websocketWindow = null
@@ -247,6 +275,7 @@ function createMainWindow() {
 	})
 	//最大化
 	mainWindow.maximize();
+	mainWindow.setMenu(null);
 
 	//装载网页
 	mainWindow.loadURL(MAIN_WINDOW_URL + urlParam);

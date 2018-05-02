@@ -302,7 +302,8 @@
             userInfo: {
                 user: '',
                 password: '',
-                code: ''
+                code: '',
+                clientFlag: true
             },
             bForgetIsShow: false,
             bImgShow: false,
@@ -389,7 +390,8 @@
                 let body = {
                     userName: this.userInfo.user,
                     password: this.userInfo.password,
-                    verifyCode: this.userInfo.code
+                    verifyCode: this.userInfo.code,
+                    clientFlag: true
                 }
                 axios.post(url.getCompanyListUrl, body)
                     .then((res) => {
@@ -414,7 +416,6 @@
                         } else {
                             this.errorMsg = data.msg;
                             this.fUserBlur();
-                            alert(data.msg)
                         }
                     });
             },
@@ -439,7 +440,7 @@
                 this.userInfo.code = ''
                 let timestamp = (new Date()).valueOf()
                 this.codeImg =
-                    `${url.getVerifyCode}?phone= ${this.userInfo.user}&timestamp=${timestamp}`;
+                    `${url.getVerifyCode}?phone=${this.userInfo.user}&timestamp=${timestamp}`;
             },
             fUserBlur() {
                 this.userInfo.user = this.userInfo.user.trim()
@@ -454,7 +455,7 @@
                             this.bShowCode = false
                         }
                     }
-                    axios.get(`${url.needVerifyCode}?phone= ${value}`)
+                    axios.get(`${url.needVerifyCode}?phone=${value}`)
                         .then(fCallback);
                 }
             },
@@ -464,7 +465,8 @@
                     username: this.userInfo.user,
                     password: this.userInfo.password,
                     code: this.userInfo.code,
-                    companyId: this.selectedCompany.id
+                    companyId: this.selectedCompany.id,
+                    clientFlag: true
                 }
                 //回调
                 const fCallback = data => {

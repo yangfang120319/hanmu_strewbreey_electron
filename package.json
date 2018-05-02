@@ -1,8 +1,8 @@
 {
   "name": "hm_crm_client",
   "version": "1.0.0",
-  "description": "函木科技草莓卷客户端",
-  "main": "main.js",
+  "description": "草莓卷客户端",
+  "main": "app.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder ."

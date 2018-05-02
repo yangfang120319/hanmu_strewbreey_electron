@@ -287,12 +287,18 @@
         created() {
             //获取客资信息
             this.getKZInfo();
+            this.palyBgm();
         },
         methods: {
             //关闭窗口
             closeWindow: function () {
                 //关闭窗口时，如果未超时，则向服务器发送主动关闭窗口的请求
                 currentWindow.close();
+            },
+            //播放音乐
+            palyBgm() {
+                let audio = new Audio('../static/media/bg.mp3');
+                audio.play();
             },
             //定时器
             setTimer(time) {
