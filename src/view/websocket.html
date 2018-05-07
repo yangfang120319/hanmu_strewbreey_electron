@@ -27,9 +27,10 @@
         });
         //-----------
         let websocket;
+
         //如果浏览器支持WebSocket
         if (window.WebSocket) {
-            websocket = new WebSocket(url.websocketUrl); //获得WebSocket对象
+            websocket = new WebSocket(`${url.websocketUrl}?token=ad231`); //获得WebSocket对象
 
             //当有消息过来的时候触发
             websocket.onmessage = function (event) {
@@ -46,7 +47,7 @@
                 console.log("建立连接");
             }
         } else {
-             console.log("浏览器不支持WebSocket");
+            console.log("浏览器不支持WebSocket");
         }
 
         function sendMsg(msg) { //发送消息
