@@ -203,11 +203,15 @@
             background-color: #d8d2d2;
             border-color: #bdbdbb;
         }
+
+        [v-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
-    <div id="app" style="width: 100%;height: 100%;user-select:none;">
+    <div id="app" style="width: 100%;height: 100%;user-select:none;" v-cloak>
         <div id="alert">
             <audio ref="audio" src="" autoplay="true" volume="1"></audio>
             <div class="header">
@@ -367,14 +371,9 @@
                     })
                     .then((res) => {
                         this.loading = false;
-                        // ipcRenderer.send('request-show-dialog', {
-                        //     type: 'success',
-                        //     body: '领取成功！'
-                        // })
-                        alert(res.data.msg)
+                        //发送一个消息
+                        ipcRenderer.send('request-receive-kzinfo', res.data)
                         currentWindow.close();
-                        //发送一个消息，说明已经领取了客资
-                        ipcRenderer.send('request-receive-kzinfo', 'ping')
                     })
                     .catch(function (error) {
                         ipcRenderer.send('request-axios-error', error)
@@ -382,7 +381,7 @@
             }
         }
     });
-    
+
     /*
     设置axios
     **/

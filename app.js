@@ -31,6 +31,8 @@ const MAIN_WINDOW_URL = urlConfig.mainPageUrl;
 const MSG_ALERT_WINDOW = 'src/view/alert.html';
 const WEBSOCKET_WINDOW = 'src/view/websocket.html';
 const TRAY_ICON = 'src/static/icons/icon.ico';
+//透明的图标
+const TRAY_ICON_TRAN = 'src/static/icons/icont.ico';
 const SUCCESS_IMG = `src/static/img/success.png`;
 const DIALOG_WINDOW = `src/view/dialog.html`;
 //创建的所有窗口及图标
@@ -93,8 +95,8 @@ function initProgram() {
 		//打开消息监听
 		opneIpcMsg();
 		//创建登录窗口
-		// createLoginWindow();
-		createDialogWindow();
+		createLoginWindow();
+		// createDialogWindow();
 		log.info('程序启动成功...');
 	} catch (error) {
 		log.error(error);
@@ -123,6 +125,8 @@ function opneIpcMsg() {
 				createMsgAlertWindow(arg);
 				//主窗口闪烁
 				mainWindow.flashFrame(true);
+				//托盘闪烁
+				flashTray();
 			}
 		} catch (error) {
 			console.log(typeof (arg))
@@ -158,6 +162,7 @@ function opneIpcMsg() {
 		//打开主界面
 		createMainWindow();
 		createTray();
+
 	})
 	//收到重新登录的请求
 	ipcMain.on('request-relogin', (event, arg) => {
@@ -170,10 +175,30 @@ function opneIpcMsg() {
 	//当点击了关闭领取客资的窗口时
 	ipcMain.on('request-close-receive-window', (event, arg) => {
 		log.info(`${commonVar.nowLoginInfo.nickName}-主动关闭了领取客资窗口`);
+		//关闭闪动
+		flashSet.close = true;
 	})
 	//当点击了领取按钮时
 	ipcMain.on('request-receive-kzinfo', (event, arg) => {
-		log.info(`${commonVar.nowLoginInfo.nickName}-领取了客资`);
+		//关闭闪动
+		flashSet.close = true;
+		//判断返回值
+		if (arg.code == '100000') {
+			//打开dialog窗口
+			commonVar.dialogMsg = {
+				type: 'success',
+				body: arg.msg
+			}
+			createDialogWindow();
+		} else {
+			//打开dialog窗口
+			commonVar.dialogMsg = {
+				type: 'error',
+				body: arg.msg
+			}
+			createDialogWindow();
+		}
+		log.info(`${commonVar.nowLoginInfo.nickName}-领取客资,结果为\n` + JSON.stringify(arg));
 	})
 	//axios错误
 	ipcMain.on('request-axios-error', (event, arg) => {
@@ -232,6 +257,44 @@ function createTray() {
 			}
 		}
 	})
+}
+/**
+ * 托盘闪动
+ */
+let flashSet = {
+	close: false,
+	id: 0,
+	show: true
+}
+/**
+ * 托盘闪动
+ */
+function flashTray() {
+	if (tray == null) return;
+	//图标
+	let icon = path.join(__dirname, TRAY_ICON);
+	//透明图标
+	let iconT = path.join(__dirname, TRAY_ICON_TRAN);
+	//启动定时器
+	flashSet.id = setInterval(() => {
+		if (flashSet.show) {
+			tray.setImage(iconT);
+		} else {
+			tray.setImage(icon);
+		}
+		flashSet.show = !flashSet.show;
+		//当可以关闭时
+		if (flashSet.close) {
+			tray.setImage(icon);
+			//清空并初始化
+			clearInterval(flashSet.id);
+			flashSet = {
+				close: false,
+				id: 0,
+				show: true
+			}
+		}
+	}, 500)
 }
 
 /**
@@ -306,7 +369,6 @@ function createWebSocketWindow() {
 	}
 
 	websocketWindow.on('closed', function () {
-		console.log('窗口关闭')
 		websocketWindow = null
 	})
 }
@@ -336,7 +398,6 @@ function createMainWindow() {
 		mainWindow.show();
 	})
 	mainWindow.on('closed', function () {
-		console.log('窗口关闭')
 		mainWindow = null
 	})
 	// 打开开发者工具。
@@ -380,7 +441,7 @@ function createMainWindow() {
  */
 function createDialogWindow(params) {
 	if (dialogWindow != null) {
-		dialogWindow.close();
+		dialogWindow = null;
 	}
 	dialogWindow = new BrowserWindow({
 		width: 360,
@@ -397,7 +458,7 @@ function createDialogWindow(params) {
 		acceptFirstMouse: true,
 		autoHideMenuBar: true,
 		transparent: false,
-		show: true,
+		show: false,
 		frame: false,
 		webPreferences: {
 			devTools: true,
@@ -416,6 +477,10 @@ function createDialogWindow(params) {
 		protocol: 'file:',
 		slashes: true
 	}))
+
+	dialogWindow.once('ready-to-show', () => {
+		dialogWindow.show()
+	})
 }
 
 /**
