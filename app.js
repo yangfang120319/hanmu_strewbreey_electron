@@ -11,19 +11,21 @@ const {
 //debug模式
 const debugModel = true;
 const electron = require('electron')
+const axios = require('axios')
 //判断日志模式
 let log;
 if (debugModel) {
 	log = console;
 } else {
-	log = require('./src/main/log-util');
+	log = require('./src/main/log-util')
 }
 
-const config = require('./src/main/config');
+const config = require('./src/main/config')
 const path = require('path')
 const url = require('url')
-
 const urlConfig = require('./src/main/url-config')
+
+
 
 //页面地址
 const LOGIN_WINDOW_URL = 'src/view/login.html';
@@ -103,6 +105,7 @@ function initProgram() {
 	}
 }
 
+
 /**
  *监听消息事件
  */
@@ -174,7 +177,9 @@ function opneIpcMsg() {
 	})
 	//当点击了关闭领取客资的窗口时
 	ipcMain.on('request-close-receive-window', (event, arg) => {
-		log.info(`${commonVar.nowLoginInfo.nickName}-主动关闭了领取客资窗口`);
+		if (arg == true) {
+			log.info(`${commonVar.nowLoginInfo.nickName}-主动关闭了领取客资窗口`);
+		}
 		//关闭闪动
 		flashSet.close = true;
 	})
@@ -203,6 +208,8 @@ function opneIpcMsg() {
 	//axios错误
 	ipcMain.on('request-axios-error', (event, arg) => {
 		log.error(`axios请求错误` + JSON.stringify(arg));
+		//发送钉钉消息
+		postDingMsg(arg)
 	})
 	//show dialog
 	ipcMain.on('request-show-dialog', (event, arg) => {
@@ -216,6 +223,26 @@ function opneIpcMsg() {
 		event.returnValue = commonVar.dialogMsg;
 	})
 
+}
+/**
+ * 发送钉钉消息
+ * @param {f} content 
+ */
+function postDingMsg(content) {
+	let msg = {
+		"msgtype": "text",
+		"text": {
+			"content": JSON.stringify(content)
+		},
+		"at": {
+			"atMobiles": [
+				// "+86-18067951532"
+			],
+			"isAtAll": false
+		}
+	}
+	//发送
+	axios.post(urlConfig.dingRobotUrl, msg);
 }
 
 /**
@@ -322,6 +349,7 @@ function createLoginWindow() {
 		// frame: false,
 		//是否在任务栏中显示窗口
 		skipTaskbar: false,
+		show: false,
 		backgroundColor: '#FFF',
 		webPreferences: {
 			devTools: true,
@@ -336,6 +364,9 @@ function createLoginWindow() {
 		protocol: 'file:',
 		slashes: true
 	}))
+	loginWindow.once('ready-to-show', () => {
+		loginWindow.show()
+	})
 	// 打开开发者工具。
 	if (debugModel) {
 		loginWindow.webContents.openDevTools()

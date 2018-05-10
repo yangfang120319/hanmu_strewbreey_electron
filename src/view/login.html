@@ -282,7 +282,7 @@
         </div>
         <div class="footer">
             <p>&copy; {{new Date().getFullYear()}} power by
-                <a href="https://qiein.com/">草莓卷</a>
+                <span @click="openWindow" style="color: #5b95f9 ;cursor: pointer;">草莓卷</span>
             </p>
         </div>
     </div>
@@ -499,6 +499,9 @@
                     .catch(function (error) {
                         ipcRenderer.send('request-axios-error', error)
                     });
+            },
+            openWindow: function () {
+                window.open('https://qiein.com/');
             }
         },
         watch: {

@@ -49,8 +49,9 @@
         } else {
             console.log("浏览器不支持WebSocket");
         }
-
-        function sendMsg(msg) { //发送消息
+        
+        //发送消息
+        function sendMsg(msg) {
             if (window.WebSocket) {
                 if (websocket.readyState == WebSocket.OPEN) { //如果WebSocket是打开状态
                     websocket.send(msg); //send()发送消息
