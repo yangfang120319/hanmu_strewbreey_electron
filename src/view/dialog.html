@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>dialog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./../static/js/vue.js"></script>
+    <script src="./../static/js/iview.js"></script>
+    <!-- <link rel="stylesheet" href="./../static/css/init.css"> -->
+    <link rel="stylesheet" href="./../static/css/iview.css">
+    <style>
+        .dialog {
+            width: 360px;
+            height: 250px;
+            padding: 16px;
+            color: #303133;
+        }
+
+        .v-title {
+            padding-left: 0;
+            margin-bottom: 0;
+            font-size: 18px;
+            line-height: 1;
+            color: #303133;
+        }
+
+        .v-content {
+            margin-top: 16px;
+            height: 150px;
+            text-align: center;
+        }
+
+        .v-content-text {
+            margin-top: 16px;
+            font-size: 16px;
+        }
+
+        .v-footer {
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="dialog">
+            <div class="v-title">提示</div>
+            <div class="v-content">
+                <template v-if="type==='error'">
+                    <Icon type="close-circled" size="88" color="#ed3f14"></Icon>
+                </template>
+                <template v-else-if="type==='success'">
+                    <Icon type="checkmark-circled" size="88" color="#19be6b"></Icon>
+                </template>
+
+                <div class="v-content-text">
+                    <span>{{body}}</span>
+                </div>
+            </div>
+            <div class="v-footer">
+                <i-Button type="primary" size="large" style="width: 92px;height: 40px;" @click="close">确定</i-Button>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+<script>
+    //获取
+    const remote = require('electron').remote
+    const ipcRenderer = remote.ipcRenderer;
+
+    let app = new Vue({
+        el: '#app',
+        data: {
+            type: '',
+            body: ''
+        },
+        created: function () {
+            this.getInfo();
+        },
+        methods: {
+            //关闭
+            close() {
+                const currentWindow = remote.getCurrentWindow();
+                currentWindow.close();
+            },
+            //获取信息
+            getInfo() {
+                let msg = ipcRenderer.sendSync('request-get-dialog-msg', 'dialogMsg');
+                this.type = msg.type;
+                this.body = msg.body;
+            }
+        }
+    })
+</script>
+
+</html>

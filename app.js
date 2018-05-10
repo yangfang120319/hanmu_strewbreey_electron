@@ -8,16 +8,22 @@ const {
 	session,
 	Notification
 } = require('electron')
+//debug模式
+const debugModel = true;
 const electron = require('electron')
-const log = require('./src/main/log-util');
+//判断日志模式
+let log;
+if (debugModel) {
+	log = console;
+} else {
+	log = require('./src/main/log-util');
+}
+
 const config = require('./src/main/config');
 const path = require('path')
 const url = require('url')
 
 const urlConfig = require('./src/main/url-config')
-
-//debug模式
-const debugModel = true;
 
 //页面地址
 const LOGIN_WINDOW_URL = 'src/view/login.html';
@@ -25,14 +31,15 @@ const MAIN_WINDOW_URL = urlConfig.mainPageUrl;
 const MSG_ALERT_WINDOW = 'src/view/alert.html';
 const WEBSOCKET_WINDOW = 'src/view/websocket.html';
 const TRAY_ICON = 'src/static/icons/icon.ico';
-
+const SUCCESS_IMG = `src/static/img/success.png`;
+const DIALOG_WINDOW = `src/view/dialog.html`;
 //创建的所有窗口及图标
 let tray = null
 let loginWindow = null;
 let mainWindow = null;
 let msgAlertWindow = null;
 let websocketWindow = null;
-
+let dialogWindow = null;
 //获取窗口大小
 let displayHeight;
 let displayWidth;
@@ -42,13 +49,15 @@ let displayWidth;
  */
 let commonVar = {
 	//当前收到的客资信息
-	nowReceiveKZInfo: '',
+	nowReceiveInfo: '',
 	//公司信息
 	companyInfo: '',
 	//用户信息
 	userInfo: '',
 	//当前登录信息
-	nowLoginInfo: ''
+	nowLoginInfo: '',
+	//提示信息
+	dialogMsg: {}
 }
 
 //公共的设置
@@ -56,6 +65,11 @@ let commonSet = {
 	allowMini: false
 }
 
+//go seay chaanle
+let goeasyConfig = {
+	channel: '',
+	appkey: '7a14932a-ee96-41c5-a1cb-b00ae5582126'
+}
 
 /**
  * 初始化程序
@@ -66,31 +80,25 @@ function initProgram() {
 		app.exit();
 		return;
 	}
-	createNotification();
+	//获取屏幕大小
 	const displays = electron.screen.getAllDisplays();
 	displayHeight = displays[0].workAreaSize.height;
 	displayWidth = displays[0].workAreaSize.width;
-	//监听消息
 	try {
 		//读取用户配置文件
 		let userConfig = config.getUserSet();
 		if (userConfig) {
 			commonSet = userConfig;
 		}
+		//打开消息监听
 		opneIpcMsg();
-		createLoginWindow();
+		//创建登录窗口
+		// createLoginWindow();
+		createDialogWindow();
 		log.info('程序启动成功...');
 	} catch (error) {
 		log.error(error);
 	}
-}
-
-function createNotification(params) {
-	let notification = new Notification({
-		title: '系统登陆',
-		body: '登陆'
-	});
-	notification.show();
 }
 
 /**
@@ -99,18 +107,43 @@ function createNotification(params) {
 function opneIpcMsg() {
 	//当收到Webscoket的打开客资到来消息的时候
 	ipcMain.on('request-open-kz-window', (event, arg) => {
-		commonVar.nowReceiveKZInfo = arg;
-		//写入日志
-		log.info('新的客资消息:' + JSON.parse(arg));
-		//打开窗口
-		createMsgAlertWindow(arg);
-		//主窗口闪烁
-		mainWindow.flashFrame(true);
+		try {
+			commonVar.nowReceiveInfo = JSON.parse(arg);
+			//如果收到的不是自己的消息，日志打印
+			if (commonVar.nowReceiveInfo.cid != commonVar.nowLoginInfo.companyId ||
+				commonVar.nowReceiveInfo.uid != commonVar.nowLoginInfo.id) {
+				log.error('收到了不属于自己的消息:' + JSON.parse(commonVar.nowReceiveInfo));
+				return;
+			}
+			//如果消息类型为接收客资
+			if (commonVar.nowReceiveInfo.type === 'receive') {
+				//写入日志
+				log.info('新的客资消息:' + JSON.stringify(commonVar.nowReceiveInfo));
+				//打开窗口
+				createMsgAlertWindow(arg);
+				//主窗口闪烁
+				mainWindow.flashFrame(true);
+			}
+		} catch (error) {
+			console.log(typeof (arg))
+			log.error('消息转换失败:' + arg);
+		}
 	})
 	//收到想要获取当前客资信息的请求
 	ipcMain.on('request-get-now-receive-kz-info', (event, arg) => {
 		//同步返回
-		event.returnValue = commonVar.nowReceiveKZInfo;
+		event.returnValue = commonVar.nowReceiveInfo;
+	})
+	//收到想要获取当前客资信息的请求
+	ipcMain.on('request-get-now-login-user-info', (event, arg) => {
+		//同步返回
+		event.returnValue = commonVar.nowLoginInfo;
+	})
+	//想要获取channle时
+	ipcMain.on('request-get-goeasy-config', (event, arg) => {
+		//同步返回
+		goeasyConfig.channel = `hm_app_channel_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}`;
+		event.returnValue = goeasyConfig;
 	})
 	//当收到请求获取公司信息时
 	ipcMain.on('request-get-company-info', (event, arg) => {
@@ -136,12 +169,28 @@ function opneIpcMsg() {
 	})
 	//当点击了关闭领取客资的窗口时
 	ipcMain.on('request-close-receive-window', (event, arg) => {
-		log.info('主动关闭了领取客资窗口');
+		log.info(`${commonVar.nowLoginInfo.nickName}-主动关闭了领取客资窗口`);
 	})
 	//当点击了领取按钮时
 	ipcMain.on('request-receive-kzinfo', (event, arg) => {
-		log.info('领取了客资');
+		log.info(`${commonVar.nowLoginInfo.nickName}-领取了客资`);
 	})
+	//axios错误
+	ipcMain.on('request-axios-error', (event, arg) => {
+		log.error(`axios请求错误` + JSON.stringify(arg));
+	})
+	//show dialog
+	ipcMain.on('request-show-dialog', (event, arg) => {
+		commonVar.dialogMsg = arg;
+		//打开dialog窗口
+		createDialogWindow();
+	})
+	//想要获取公共信息
+	ipcMain.on('request-get-dialog-msg', (event, arg) => {
+		//获取提示消息内容
+		event.returnValue = commonVar.dialogMsg;
+	})
+
 }
 
 /**
@@ -270,6 +319,8 @@ function createMainWindow() {
 	mainWindow = new BrowserWindow({
 		// width: 1024,
 		// height: 768,
+		minWidth: '1024',
+		minHeight: '768',
 		show: false,
 		title: "草莓卷客户端"
 	})
@@ -320,6 +371,51 @@ function createMainWindow() {
 			}
 		});
 	})
+}
+
+
+/**
+ * 提示窗口
+ * @param {*} params 
+ */
+function createDialogWindow(params) {
+	if (dialogWindow != null) {
+		dialogWindow.close();
+	}
+	dialogWindow = new BrowserWindow({
+		width: 360,
+		height: 250,
+		useContentSize: true,
+		skipTaskbar: true,
+		resizable: false,
+		maximizable: false,
+		fullscreen: false,
+		fullscreenable: false,
+		alwaysOnTop: true,
+		movable: false,
+		title: "通知消息",
+		acceptFirstMouse: true,
+		autoHideMenuBar: true,
+		transparent: false,
+		show: true,
+		frame: false,
+		webPreferences: {
+			devTools: true,
+			scrollBounce: true,
+			webSecurity: false, // 允许跨域
+		}
+	})
+	// 打开开发者工具。
+	if (debugModel) {
+		dialogWindow.webContents.openDevTools()
+	}
+	dialogWindow.setMenu(null);
+	//加载
+	dialogWindow.loadURL(url.format({
+		pathname: path.join(__dirname, DIALOG_WINDOW),
+		protocol: 'file:',
+		slashes: true
+	}))
 }
 
 /**

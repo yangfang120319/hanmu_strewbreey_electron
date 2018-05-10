@@ -231,7 +231,7 @@
                 <div class="head">
                     <h2 class="title">
                         您有
-                        <span>{{message.num}}</span> 个新客资，请及时领取！
+                        <span>{{message.kznum}}</span> 个新客资，请及时领取！
                     </h2>
                 </div>
                 <div class="detail">
@@ -242,7 +242,7 @@
                     </i-Circle>
                 </div>
                 <div class="foot">
-                    <i-Button type="success" size="large" class="btn-large" :disabled="isOverTime">{{isOverTime?'已超时':'领取'}}</i-Button>
+                    <i-Button type="success" @click="goToReceiveKZ" size="large" :loading="loading" class="btn-large" :disabled="isOverTime">{{isOverTime?'已超时':'领取'}}</i-Button>
                 </div>
             </div>
         </div>
@@ -251,11 +251,14 @@
 <script>
     //获取当前窗口
     const remote = require('electron').remote
+    //url配置 
+    const url = require("../main/url-config");
     const {
         ipcRenderer
     } = require('electron')
     const currentWindow = remote.getCurrentWindow()
-
+    //设置axios默认值
+    setAxios();
     //获取url中的参数
     function getQueryString() {
         var qs = location.search.substr(1), // 获取url中"?"符后的字串  
@@ -282,18 +285,36 @@
             time: 0,
             param: '',
             percent: 100,
-            isOverTime: false
+            isOverTime: false,
+            loading: false
         },
         created() {
             //获取客资信息
             this.getKZInfo();
             this.palyBgm();
         },
+
         methods: {
             //关闭窗口
             closeWindow: function () {
                 //关闭窗口时，如果未超时，则向服务器发送主动关闭窗口的请求
-                currentWindow.close();
+                if (this.isOverTime) {
+                    currentWindow.close();
+                    return;
+                }
+                axios.get(url.refuseKZUrl, {
+                        params: {
+                            kzId: this.message.kzid,
+                            logId: this.message.logid
+                        }
+                    }).then((res) => {
+                        //发送一个消息，说明已经关闭了窗口
+                        ipcRenderer.send('request-close-receive-window', 'ping')
+                        currentWindow.close();
+                    })
+                    .catch(function (error) {
+                        ipcRenderer.send('request-axios-error', error)
+                    })
             },
             //播放音乐
             palyBgm() {
@@ -330,12 +351,47 @@
             //获取客资信息
             getKZInfo() {
                 let message = ipcRenderer.sendSync('request-get-now-receive-kz-info', 'ping')
-                this.message = JSON.parse(message);
-                this.allTime = this.message.time;
-                this.setTimer(this.message.time);
+                this.message = message.content;
+                console.log(message);
+                this.allTime = this.message.overtime;
+                this.setTimer(this.message.overtime);
+            },
+            //领取客资
+            goToReceiveKZ() {
+                this.loading = true;
+                axios.get(url.receiveKZUrl, {
+                        params: {
+                            kzId: this.message.kzid,
+                            logId: this.message.logid
+                        }
+                    })
+                    .then((res) => {
+                        this.loading = false;
+                        // ipcRenderer.send('request-show-dialog', {
+                        //     type: 'success',
+                        //     body: '领取成功！'
+                        // })
+                        alert(res.data.msg)
+                        currentWindow.close();
+                        //发送一个消息，说明已经领取了客资
+                        ipcRenderer.send('request-receive-kzinfo', 'ping')
+                    })
+                    .catch(function (error) {
+                        ipcRenderer.send('request-axios-error', error)
+                    })
             }
         }
     });
+    
+    /*
+    设置axios
+    **/
+    function setAxios() {
+        let userInfo = ipcRenderer.sendSync('request-get-now-login-user-info', 'ping')
+        axios.defaults.headers.common['cid'] = userInfo.companyId;
+        axios.defaults.headers.common['uid'] = userInfo.id;
+        axios.defaults.headers.common['token'] = userInfo.token;
+    }
 </script>
 
 </html>

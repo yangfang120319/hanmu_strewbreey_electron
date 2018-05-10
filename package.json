@@ -1,5 +1,5 @@
 {
-  "name": "hm_crm_client",
+  "name": "hm-crm-client",
   "version": "1.0.0",
   "description": "草莓卷客户端",
   "main": "app.js",
@@ -32,6 +32,7 @@
     }
   },
   "dependencies": {
-    "fs-extra": "^5.0.0"
+    "fs-extra": "^5.0.0",
+    "node-machine-id": "^1.1.10"
   }
 }

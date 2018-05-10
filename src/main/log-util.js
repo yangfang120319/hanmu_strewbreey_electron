@@ -35,7 +35,7 @@ function save(data, level) {
     data = `${time} ${level} --- : ${data}\n`;
     fs.appendFile(getLogFileName(), data, (err) => {
         if (err) throw err;
-        console.log('日志保存出错！');
+        console.error('日志保存出错！' + err);
     });
 }
 

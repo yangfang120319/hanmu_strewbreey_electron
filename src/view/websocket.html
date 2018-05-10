@@ -13,25 +13,25 @@
         const {
             ipcRenderer
         } = require('electron')
-
+        //同步获取配置
+        let gosasyConfig = ipcRenderer.sendSync('request-get-goeasy-config');
         let goEasy = new GoEasy({
-            appkey: 'BS-9a4ebb567431410aa1c1534a23ac47a2'
+            appkey: gosasyConfig.appkey
         });
-
+        //订阅
         goEasy.subscribe({
-            channel: 'hello',
+            channel: gosasyConfig.channel,
             onMessage: function (message) {
-                // alert('收到：' + message.content);
+                console.log(typeof (message.content))
                 ipcRenderer.send('request-open-kz-window', message.content)
             }
         });
         //-----------
         let websocket;
-
+        let userInfo = ipcRenderer.sendSync('request-get-now-login-user-info', 'ping')
         //如果浏览器支持WebSocket
         if (window.WebSocket) {
-            websocket = new WebSocket(`${url.websocketUrl}?token=ad231`); //获得WebSocket对象
-
+            websocket = new WebSocket(`${url.websocketUrl}?cid=${userInfo.companyId}`); //获得WebSocket对象
             //当有消息过来的时候触发
             websocket.onmessage = function (event) {
                 console.log(event.data);

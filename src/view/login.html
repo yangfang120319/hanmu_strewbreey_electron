@@ -234,7 +234,7 @@
         </div>
         <div class="login-pannle">
             <div v-if="!bShowChoseCompany">
-                <i-Form :model="userInfo" :rules="ruleInline" ref="formInline">
+                <i-Form :model="userInfo" ref="formInline">
                     <Form-Item prop="user">
                         <i-Input type="text" size="large" @on-blur="fUserBlur" :maxlength="11" v-model="userInfo.user">
                             <Icon type="person" slot="prepend"></Icon>
@@ -276,7 +276,7 @@
                 </div>
             </div>
             <div v-if="!!errorMsg" class="warn-msg">{{errorMsg}}</div>
-            <i-Button type="primary" size="large" @click="handleSubmit('formInline')" long style="margin-top: 30px;">
+            <i-Button type="primary" size="large" @click="handleSubmit('formInline')" :loading="loading" long style="margin-top: 30px;">
                 立即登录
             </i-Button>
         </div>
@@ -348,7 +348,8 @@
                     message: '请输入验证码',
                     trigger: 'blur'
                 }]
-            }
+            },
+            loading: false
         },
         created: function () {
             if (localStorage.loginUserName) {
@@ -393,8 +394,10 @@
                     verifyCode: this.userInfo.code,
                     clientFlag: true
                 }
+                this.loading = true;
                 axios.post(url.getCompanyListUrl, body)
                     .then((res) => {
+                        this.loading = false;
                         let data = res.data;
                         if (data.code === 100000) {
                             //当用户只有一个公司时，直接登录
@@ -417,7 +420,9 @@
                             this.errorMsg = data.msg;
                             this.fUserBlur();
                         }
-                    });
+                    }).catch(function (error) {
+                        ipcRenderer.send('request-axios-error', error)
+                    })
             },
             //选择上一个公司
             fChooseLastCompany() {
@@ -468,8 +473,10 @@
                     companyId: this.selectedCompany.id,
                     clientFlag: true
                 }
+                this.loading = true;
                 //回调
                 const fCallback = data => {
+                    this.loading = false;
                     this.bShowCode = false
                     data = data.data;
                     if (data.code === 100000) { //success
@@ -488,7 +495,10 @@
                 }
                 //post
                 axios.post(url.loginWithCompanyId, body)
-                    .then(fCallback);
+                    .then(fCallback)
+                    .catch(function (error) {
+                        ipcRenderer.send('request-axios-error', error)
+                    });
             }
         },
         watch: {
