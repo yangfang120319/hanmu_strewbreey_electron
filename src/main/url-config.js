@@ -8,13 +8,13 @@ const baseUrl = debug ? `${url}:8080` : `${url}:9090`;
 // const baseUrl = `${url}:9090`
 exports.baseUrl = baseUrl;
 //获取公司列表
-exports.getCompanyListUrl = `${baseUrl}/staff/get_company_list`;
+exports.getCompanyListUrl = `${baseUrl}/login/get_company_list_by_phone`;
 //获取验证码
-exports.getVerifyCode = `${baseUrl}/staff/verify_code`;
+exports.getVerifyCode = `${baseUrl}/login/verify_code`;
 //是否需要验证码
-exports.needVerifyCode = `${baseUrl}/staff/need_verity_code`;
+exports.needVerifyCode = `${baseUrl}/login/need_verity_code`;
 //根据公司ID登陆
-exports.loginWithCompanyId = `${baseUrl}/staff/login_with_company_id`;
+exports.loginWithCompanyId = `${baseUrl}/login/login_by_phone`;
 //主界面URL
 exports.mainPageUrl = `${url}/login`;
 //领取客资URL

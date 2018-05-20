@@ -130,6 +130,13 @@ function opneIpcMsg() {
 				mainWindow.flashFrame(true);
 				//托盘闪烁
 				flashTray();
+			}else if(commonVar.nowReceiveInfo.type === 'xiaxian'){
+				//单点登录
+
+				//提示
+
+				//退出
+
 			}
 		} catch (error) {
 			console.log(typeof (arg))
