@@ -25,7 +25,7 @@ const path = require('path')
 const url = require('url')
 const urlConfig = require('./src/main/url-config')
 
-
+const TITLE_ = `草莓卷-最好的客资系统`;
 
 //页面地址
 const LOGIN_WINDOW_URL = 'src/view/login.html';
@@ -130,7 +130,7 @@ function opneIpcMsg() {
 				mainWindow.flashFrame(true);
 				//托盘闪烁
 				flashTray();
-			}else if(commonVar.nowReceiveInfo.type === 'xiaxian'){
+			} else if (commonVar.nowReceiveInfo.type === 'xiaxian') {
 				//单点登录
 
 				//提示
@@ -167,6 +167,10 @@ function opneIpcMsg() {
 	//收到登录成功的请求时
 	ipcMain.on('request-login-success', (event, arg) => {
 		commonVar.nowLoginInfo = arg;
+		//设置axios 默认值
+		axios.defaults.headers.common['uid'] = commonVar.nowLoginInfo.id;
+		axios.defaults.headers.common['cid'] = commonVar.nowLoginInfo.companyId;
+		axios.defaults.headers.common['token'] = commonVar.nowLoginInfo.token;
 		//打开websockt监听
 		createWebSocketWindow();
 		//打开主界面
@@ -269,17 +273,17 @@ function createTray() {
 	}, {
 		label: '注销',
 		click: function (event) {
-			reLogin();
+			closeWindowConfirm(tray, reLogin());
 		}
 	}, {
 		label: '退出',
-		role: 'quit',
-		// click: function (event) {
-		// 	//关闭所有
-		// 	exitProgram();
-		// }
+		// role: 'quit',
+		click: function (event) {
+			//关闭所有
+			closeWindowConfirm(tray);
+		}
 	}])
-	tray.setToolTip('草莓卷客户端');
+	tray.setToolTip(TITLE_);
 	tray.setContextMenu(contextMenu)
 	tray.on('click', (e) => {
 		if (mainWindow) {
@@ -422,7 +426,7 @@ function createMainWindow() {
 		minWidth: '1024',
 		minHeight: '768',
 		show: false,
-		title: "草莓卷客户端"
+		title: TITLE_
 	})
 	//最大化
 	mainWindow.maximize();
@@ -442,10 +446,6 @@ function createMainWindow() {
 	if (debugModel) {
 		mainWindow.webContents.openDevTools()
 	}
-	//当关闭之前
-	// mainWindow.onbeforeunload = (e) => {
-	// 	e.returnValue = false // 相当于 `return false` ，但是不推荐使用
-	// }
 	//窗口最小化
 	mainWindow.on('minimize', (event) => {
 		event.preventDefault();
@@ -459,17 +459,34 @@ function createMainWindow() {
 	//当关闭触发
 	mainWindow.on('close', (event) => {
 		event.preventDefault()
-		dialog.showMessageBox(mainWindow, {
-			title: "提示",
-			message: '确定关闭草莓卷吗？',
-			buttons: ['取消', '确定']
-		}, (index) => {
-			if (index == 1) {
-				mainWindow.destroy();
-				exitProgram();
-			}
-		});
+		//确认
+		closeWindowConfirm(mainWindow);
 	})
+}
+
+/**
+ * 确认退出
+ * @param {*} win 
+ */
+function closeWindowConfirm(win, callBack) {
+	let closeConfirm = new BrowserWindow({
+		show: false,
+		title: "通知消息",
+	});
+	dialog.showMessageBox(closeConfirm, {
+		title: "提示",
+		message: '确定退出并关闭草莓卷吗？',
+		buttons: ['取消', '确定']
+	}, (index) => {
+		if (index == 1) {
+			win.destroy();
+			if (callBack) {
+				callBack();
+			}
+			closeConfirm.destroy();
+			exitProgram();
+		}
+	});
 }
 
 
@@ -522,13 +539,13 @@ function createDialogWindow(params) {
 }
 
 /**
- * 创建消息提示窗口
+ * 创建客资消息提示窗口
  */
 function createMsgAlertWindow(param) {
 	msgAlertWindow = new BrowserWindow({
-		height: 360,
+		height: 278,
 		useContentSize: true,
-		width: 500,
+		width: 392,
 		skipTaskbar: true,
 		resizable: false,
 		maximizable: false,
@@ -560,8 +577,8 @@ function createMsgAlertWindow(param) {
 	}))
 	//可以显示时
 	msgAlertWindow.once('ready-to-show', () => {
-		let x = displayWidth - 500,
-			y = displayHeight - 360
+		let x = displayWidth - 392,
+			y = displayHeight - 278
 		/**
 		 * 关闭其他的 alert 窗口
 		 */
@@ -582,13 +599,16 @@ app.on('ready', initProgram);
  * 所有窗口关闭时
  */
 app.on('window-all-closed', function () {
-	log.info('程序退出...');
 	//保存下用户设置
 	config.saveUserSet(commonSet);
 	if (process.platform !== 'darwin') {
 		app.quit()
 	}
 })
+
+app.on('quit', function () {
+	log.info('程序退出...');
+});
 
 /**
  * 关闭进程
@@ -609,8 +629,13 @@ function exitProgram() {
 	if (websocketWindow) {
 		websocketWindow.destroy();
 	}
+	axios.get(urlConfig.exitUrl)
+		.then(res => {
+			log.info('退出系统')
+		})
 	app.quit();
 }
+
 /**
  *重新登录
  */
@@ -631,6 +656,7 @@ function reLogin() {
 		websocketWindow.destroy();
 	}
 }
+
 /**
  * 苹果系统
  */
@@ -639,10 +665,10 @@ app.on('activate', function () {
 		createLoginWindow();
 	}
 })
+
 /**
  * 检测是否单例运行
  */
-
 function checkSingle() {
 	const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
 		//若最小化则还原

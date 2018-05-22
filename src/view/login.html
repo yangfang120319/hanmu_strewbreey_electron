@@ -461,7 +461,11 @@
                         }
                     }
                     axios.get(`${url.needVerifyCode}?phone=${value}`)
-                        .then(fCallback);
+                        .then(fCallback)
+                        .catch(function (error) {
+                            alert('网络连接出现问题...请联系网络人员解决');
+                            ipcRenderer.send('request-axios-error', error)
+                        });;
                 }
             },
             //真正的登录
@@ -497,6 +501,7 @@
                 axios.post(url.loginWithCompanyId, body)
                     .then(fCallback)
                     .catch(function (error) {
+                        alert('网络连接出现问题...请联系网络人员解决');
                         ipcRenderer.send('request-axios-error', error)
                     });
             },

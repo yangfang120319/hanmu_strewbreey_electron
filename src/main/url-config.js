@@ -2,6 +2,7 @@
  * 系统配置的URL
  */
 const debug = false;
+
 const url = debug ? `http://127.0.0.1` : `http://114.55.249.156`;
 
 const baseUrl = debug ? `${url}:8080` : `${url}:9090`;
@@ -23,5 +24,7 @@ exports.receiveKZUrl = `${baseUrl}/app/receive`;
 exports.refuseKZUrl = `${baseUrl}/app/refuse`;
 //websocket url
 exports.websocketUrl = `ws://114.55.249.156:8030/ws`;
+//websocket url
+exports.exitUrl = `${baseUrl}/staff/logout`;
 //钉钉机器人Url
 exports.dingRobotUrl = `https://oapi.dingtalk.com/robot/send?access_token=2b45af6f1dd5c66f7662eaeb4dc7454ad6ee8d13005f5d2096fa4b107f488487`;

@@ -1,7 +1,7 @@
 {
   "name": "hm-crm-client",
-  "version": "1.0.0",
-  "description": "草莓卷客户端",
+  "version": "v5.0.1",
+  "description": "草莓卷jupiter",
   "main": "app.js",
   "scripts": {
     "start": "electron .",
@@ -20,7 +20,7 @@
     "electron": "^1.8.4"
   },
   "build": {
-    "productName": "草莓卷",
+    "productName": "草莓卷jupiter",
     "mac": {
       "icon": "build/icons/icon.icns"
     },
