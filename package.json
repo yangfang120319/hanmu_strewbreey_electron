@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder ."
+    "build": "electron-builder .",
+    "build32": "electron-builder --platform=win32"
   },
   "keywords": [
     "Electron",

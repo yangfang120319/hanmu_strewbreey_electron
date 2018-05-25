@@ -9,7 +9,7 @@ const {
 	Notification
 } = require('electron')
 //debug模式
-const debugModel = true;
+const debugModel = false;
 const electron = require('electron')
 const axios = require('axios')
 //判断日志模式
@@ -24,6 +24,7 @@ const config = require('./src/main/config')
 const path = require('path')
 const url = require('url')
 const urlConfig = require('./src/main/url-config')
+const Util = require('./src/main/util')
 
 const TITLE_ = `草莓卷-最好的客资系统`;
 
@@ -32,6 +33,7 @@ const LOGIN_WINDOW_URL = 'src/view/login.html';
 const MAIN_WINDOW_URL = urlConfig.mainPageUrl;
 const MSG_ALERT_WINDOW = 'src/view/alert.html';
 const WEBSOCKET_WINDOW = 'src/view/websocket.html';
+const OFFLINE_WINDOW = `src/view/offline.html`;
 const TRAY_ICON = 'src/static/icons/icon.ico';
 //透明的图标
 const TRAY_ICON_TRAN = 'src/static/icons/icont.ico';
@@ -98,12 +100,14 @@ function initProgram() {
 		opneIpcMsg();
 		//创建登录窗口
 		createLoginWindow();
+		// createOffLineWindow();
 		// createDialogWindow();
 		log.info('程序启动成功...');
 	} catch (error) {
 		log.error(error);
 	}
 }
+
 
 
 /**
@@ -175,6 +179,7 @@ function opneIpcMsg() {
 		createWebSocketWindow();
 		//打开主界面
 		createMainWindow();
+		//创建托盘
 		createTray();
 
 	})
@@ -233,8 +238,72 @@ function opneIpcMsg() {
 		//获取提示消息内容
 		event.returnValue = commonVar.dialogMsg;
 	})
+	//挤下线
+	ipcMain.on('request-crowd-offline', (event, arg) => {
+		//获取提示消息内容
+		reLogin();
+		//打开dialog窗口
+		commonVar.offLineMsg = {
+			ip: arg.ip,
+			address: arg.address,
+			time: Util.formatDate(new Date(), 'hh:mm')
+		}
+		createOffLineWindow();
+	})
+	//想要获取公共信息
+	ipcMain.on('request-get-offline-msg', (event, arg) => {
+		//获取提示消息内容
+		event.returnValue = commonVar.offLineMsg;
+	})
 
 }
+
+/**
+ * 下线提示窗口
+ */
+function createOffLineWindow() {
+	let offLineWindow = null;
+	offLineWindow = new BrowserWindow({
+		width: 360,
+		height: 230,
+		useContentSize: true,
+		skipTaskbar: true,
+		resizable: false,
+		maximizable: false,
+		fullscreen: false,
+		fullscreenable: false,
+		alwaysOnTop: true,
+		movable: false,
+		title: "通知消息",
+		acceptFirstMouse: true,
+		autoHideMenuBar: true,
+		transparent: false,
+		show: false,
+		frame: false,
+		webPreferences: {
+			devTools: true,
+			scrollBounce: true,
+			webSecurity: false, // 允许跨域
+		}
+	})
+	// 打开开发者工具。
+	if (debugModel) {
+		offLineWindow.webContents.openDevTools()
+	}
+	offLineWindow.setMenu(null);
+	//加载
+	offLineWindow.loadURL(url.format({
+		pathname: path.join(__dirname, OFFLINE_WINDOW),
+		protocol: 'file:',
+		slashes: true
+	}))
+
+	offLineWindow.once('ready-to-show', () => {
+		offLineWindow.show()
+	})
+}
+
+
 /**
  * 发送钉钉消息
  * @param {f} content 
@@ -263,24 +332,22 @@ function createTray() {
 	let icon = path.join(__dirname, TRAY_ICON);
 	tray = new Tray(icon)
 	const contextMenu = Menu.buildFromTemplate([{
-		label: '最小化隐藏',
-		type: 'checkbox',
-		//为用户自定义的配置
-		checked: commonSet.allowMini,
-		click: function (menuItem, browserWindow, event) {
-			commonSet.allowMini = !commonSet.allowMini;
-		}
-	}, {
 		label: '注销',
 		click: function (event) {
-			closeWindowConfirm(tray, reLogin());
+			closeWindowConfirm('确定注销并重新登录草莓卷吗？', () => {
+				reLogin()
+				tray.destroy();
+			});
 		}
 	}, {
 		label: '退出',
 		// role: 'quit',
 		click: function (event) {
 			//关闭所有
-			closeWindowConfirm(tray);
+			closeWindowConfirm('确定退出并关闭草莓卷吗？', () => {
+				tray.destroy();
+				exitProgram();
+			});
 		}
 	}])
 	tray.setToolTip(TITLE_);
@@ -448,19 +515,24 @@ function createMainWindow() {
 	}
 	//窗口最小化
 	mainWindow.on('minimize', (event) => {
-		event.preventDefault();
-		//只有当允许最小化时才最小化，否则隐藏
-		if (!commonSet.allowMini) {
-			mainWindow.minimize()
-		} else {
-			mainWindow.hide();
-		}
+		// event.preventDefault();
+		// //只有当允许最小化时才最小化，否则隐藏
+		// if (!commonSet.allowMini) {
+		// 	mainWindow.minimize()
+		// } else {
+		// 	mainWindow.hide();
+		// }
 	})
 	//当关闭触发
 	mainWindow.on('close', (event) => {
 		event.preventDefault()
 		//确认
-		closeWindowConfirm(mainWindow);
+		closeWindowConfirm('确定退出并关闭草莓卷吗？', () => {
+			mainWindow.destroy();
+			exitProgram();
+		}, () => {
+			mainWindow.hide();
+		});
 	})
 }
 
@@ -468,24 +540,35 @@ function createMainWindow() {
  * 确认退出
  * @param {*} win 
  */
-function closeWindowConfirm(win, callBack) {
+function closeWindowConfirm(msg, callBack, callBack2) {
+
 	let closeConfirm = new BrowserWindow({
 		show: false,
 		title: "通知消息",
 	});
 	dialog.showMessageBox(closeConfirm, {
 		title: "提示",
-		message: '确定退出并关闭草莓卷吗？',
+		message: msg,
 		buttons: ['取消', '确定']
 	}, (index) => {
 		if (index == 1) {
-			win.destroy();
 			if (callBack) {
-				callBack();
+				//发送下线请求
+				axios.get(urlConfig.exitUrl)
+					.then(res => {
+						log.info('发送了退出系统的请求！')
+						callBack();
+					})
+					.catch(e => {
+						callBack();
+					})
 			}
-			closeConfirm.destroy();
-			exitProgram();
+		} else {
+			if (callBack2) {
+				callBack2();
+			}
 		}
+		closeConfirm.destroy();
 	});
 }
 
@@ -500,7 +583,7 @@ function createDialogWindow(params) {
 	}
 	dialogWindow = new BrowserWindow({
 		width: 360,
-		height: 250,
+		height: 270,
 		useContentSize: true,
 		skipTaskbar: true,
 		resizable: false,
@@ -629,10 +712,6 @@ function exitProgram() {
 	if (websocketWindow) {
 		websocketWindow.destroy();
 	}
-	axios.get(urlConfig.exitUrl)
-		.then(res => {
-			log.info('退出系统')
-		})
 	app.quit();
 }
 

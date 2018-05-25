@@ -12,7 +12,7 @@
     <style>
         .dialog {
             width: 360px;
-            height: 250px;
+            height: 230px;
             padding: 16px;
             color: #303133;
             user-select: none;
@@ -29,7 +29,7 @@
         .v-content {
             margin-top: 16px;
             height: 150px;
-            text-align: center;
+            text-align: left;
         }
 
         .v-content-text {
@@ -41,6 +41,12 @@
             text-align: right;
             margin-top: 16px;
         }
+
+        .tb-style {
+            color: #0091ea;
+            float: left;
+            margin-right: 16px;
+        }
     </style>
 </head>
 
@@ -49,23 +55,24 @@
         <div class="dialog">
             <div class="v-title">提示</div>
             <div class="v-content">
-                <template v-if="type==='error'">
-                    <Icon type="close-circled" size="60" color="#ed3f14"></Icon>
-                </template>
-                <template v-else-if="type==='success'">
-                    <Icon type="checkmark-circled" size="60" color="#19be6b"></Icon>
-                </template>
+                <div style="display: inline-block">
 
-                <div class="v-content-text">
-                    <span v-html="body"></span>
+                    <div class="v-content-text">
+                        <Icon type="information-circled" size=60 align="left" class="tb-style"></Icon>
+                        您的账户于
+                        <span style="color: red">{{time}} </span>在另一地点登录
+                        <br/>登录地址：
+                        <span style="color: red">{{ip}}({{ip}})</span>
+                        <br/>
+                        <br/>您已被迫下线，如果不是您本人操作，那么 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 您的密码很可能已经泄漏，建议您立即修改密码。
+                    </div>
+                </div>
+                <div class="v-footer">
+                    <i-Button type="ghost" @click="close">关闭</i-Button>
                 </div>
             </div>
-            <div class="v-footer">
-                <i-Button type="info" size="large" style="width: 92px;height: 40px;" @click="close">关闭</i-Button>
-            </div>
-        </div>
 
-    </div>
+        </div>
 
 </body>
 
@@ -79,8 +86,9 @@
     let app = new Vue({
         el: '#app',
         data: {
-            type: '',
-            body: ''
+            ip: '',
+            address: '',
+            time: ''
         },
         created: function () {
             this.getInfo();
@@ -93,9 +101,10 @@
             },
             //获取信息
             getInfo() {
-                let msg = ipcRenderer.sendSync('request-get-dialog-msg', 'dialogMsg');
-                this.type = msg.type;
-                this.body = msg.body;
+                // let msg = ipcRenderer.sendSync('request-get-offline-msg');
+                // this.ip = msg.ip;
+                // this.address = msg.address;
+                // this.time = msg.time;
             }
         }
     })

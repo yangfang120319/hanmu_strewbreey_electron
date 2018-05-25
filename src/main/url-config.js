@@ -26,5 +26,7 @@ exports.refuseKZUrl = `${baseUrl}/app/refuse`;
 exports.websocketUrl = `ws://114.55.249.156:8030/ws`;
 //websocket url
 exports.exitUrl = `${baseUrl}/staff/logout`;
+//客户端版本
+exports.clientVersion = 1;
 //钉钉机器人Url
 exports.dingRobotUrl = `https://oapi.dingtalk.com/robot/send?access_token=2b45af6f1dd5c66f7662eaeb4dc7454ad6ee8d13005f5d2096fa4b107f488487`;

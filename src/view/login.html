@@ -282,7 +282,7 @@
         </div>
         <div class="footer">
             <p>&copy; {{new Date().getFullYear()}} power by
-                <span @click="openWindow" style="color: #5b95f9 ;cursor: pointer;">草莓卷</span>
+                <span @click="openWindow" style="color: #5b95f9 ;cursor: pointer;">清莹网</span>
             </p>
         </div>
     </div>
@@ -363,16 +363,16 @@
                 this.userInfo.user = this.userInfo.user.trim()
                 this.userInfo.password = this.userInfo.password.trim()
                 if (!phoneReg.test(this.userInfo.user)) {
-                    this.warningMessage = '请输入正确的手机号码'
+                    this.errorMsg = '请输入正确的手机号码'
                     return false;
                 }
                 if (!this.userInfo.password) {
-                    this.warningMessage = '请输入密码'
+                    this.errorMsg = '请输入密码'
                     return false;
                 }
                 if (!this.userInfo.code && this.bShowCode) {
                     this.userInfo.code = this.userInfo.code.trim()
-                    this.warningMessage = '请输入验证码'
+                    this.errorMsg = '请输入验证码'
                     return false;
                 }
                 this.warningMessage = ''
@@ -392,7 +392,8 @@
                     userName: this.userInfo.user,
                     password: this.userInfo.password,
                     verifyCode: this.userInfo.code,
-                    clientFlag: true
+                    clientFlag: true,
+                    clientVersion: url.clientVersion
                 }
                 this.loading = true;
                 axios.post(url.getCompanyListUrl, body)
@@ -420,9 +421,10 @@
                             this.errorMsg = data.msg;
                             this.fUserBlur();
                         }
-                    }).catch(function (error) {
-                        ipcRenderer.send('request-axios-error', error)
                     })
+                    .catch((error) => {
+                        this.handleException(error);
+                    });
             },
             //选择上一个公司
             fChooseLastCompany() {
@@ -462,10 +464,9 @@
                     }
                     axios.get(`${url.needVerifyCode}?phone=${value}`)
                         .then(fCallback)
-                        .catch(function (error) {
-                            alert('网络连接出现问题...请联系网络人员解决');
-                            ipcRenderer.send('request-axios-error', error)
-                        });;
+                        .catch((error) => {
+                            this.handleException(error);
+                        });
                 }
             },
             //真正的登录
@@ -475,7 +476,8 @@
                     password: this.userInfo.password,
                     code: this.userInfo.code,
                     companyId: this.selectedCompany.id,
-                    clientFlag: true
+                    clientFlag: true,
+                    clientVersion: url.clientVersion
                 }
                 this.loading = true;
                 //回调
@@ -500,13 +502,18 @@
                 //post
                 axios.post(url.loginWithCompanyId, body)
                     .then(fCallback)
-                    .catch(function (error) {
-                        alert('网络连接出现问题...请联系网络人员解决');
-                        ipcRenderer.send('request-axios-error', error)
+                    .catch((error) => {
+                        this.handleException(error);
                     });
             },
             openWindow: function () {
                 window.open('https://qiein.com/');
+            },
+            //处理网络异常
+            handleException(error) {
+                this.errorMsg = '网络不给力，请检查网络设置';
+                this.loading = false;
+                ipcRenderer.send('request-axios-error', error)
             }
         },
         watch: {
