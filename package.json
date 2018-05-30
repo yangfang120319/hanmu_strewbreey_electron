@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder .",
-    "build32": "electron-builder --platform=win32"
+    "build32": "electron-builder --ia32"
   },
   "keywords": [
     "Electron",

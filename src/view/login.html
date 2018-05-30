@@ -370,6 +370,10 @@
                     this.errorMsg = '请输入密码'
                     return false;
                 }
+                if (this.userInfo.password.length<6) {
+                    this.errorMsg = '密码至少为6位'
+                    return false;
+                }
                 if (!this.userInfo.code && this.bShowCode) {
                     this.userInfo.code = this.userInfo.code.trim()
                     this.errorMsg = '请输入验证码'

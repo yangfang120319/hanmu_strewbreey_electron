@@ -12,7 +12,7 @@
     <style>
         .dialog {
             width: 360px;
-            height: 230px;
+            height: 225px;
             padding: 16px;
             color: #303133;
             user-select: none;
@@ -43,7 +43,7 @@
         }
 
         .tb-style {
-            color: #0091ea;
+            color: #ff9900;
             float: left;
             margin-right: 16px;
         }
@@ -62,7 +62,7 @@
                         您的账户于
                         <span style="color: red">{{time}} </span>在另一地点登录
                         <br/>登录地址：
-                        <span style="color: red">{{ip}}({{ip}})</span>
+                        <span style="color: red">{{address}}({{ip}})</span>
                         <br/>
                         <br/>您已被迫下线，如果不是您本人操作，那么 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 您的密码很可能已经泄漏，建议您立即修改密码。
                     </div>
@@ -101,10 +101,10 @@
             },
             //获取信息
             getInfo() {
-                // let msg = ipcRenderer.sendSync('request-get-offline-msg');
-                // this.ip = msg.ip;
-                // this.address = msg.address;
-                // this.time = msg.time;
+                let msg = ipcRenderer.sendSync('request-get-offline-msg');
+                this.ip = msg.ip;
+                this.address = msg.address;
+                this.time = msg.time;
             }
         }
     })

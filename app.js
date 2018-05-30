@@ -265,7 +265,7 @@ function createOffLineWindow() {
 	let offLineWindow = null;
 	offLineWindow = new BrowserWindow({
 		width: 360,
-		height: 230,
+		height: 225,
 		useContentSize: true,
 		skipTaskbar: true,
 		resizable: false,
