@@ -160,7 +160,7 @@ function opneIpcMsg() {
 	//想要获取channle时
 	ipcMain.on('request-get-goeasy-config', (event, arg) => {
 		//同步返回
-		goeasyConfig.channel = `hm_app_channel_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}`;
+		goeasyConfig.channel = `hm_app_jupiter_channel_${commonVar.nowLoginInfo.companyId}_${commonVar.nowLoginInfo.id}`;
 		event.returnValue = goeasyConfig;
 	})
 	//当收到请求获取公司信息时
@@ -376,6 +376,8 @@ let flashSet = {
  */
 function flashTray() {
 	if (tray == null) return;
+	//先清空上一个定时器
+	clearInterval(flashSet.id);
 	//图标
 	let icon = path.join(__dirname, TRAY_ICON);
 	//透明图标
