@@ -6,6 +6,8 @@ const debug = false;
 const url = debug ? `http://127.0.0.1` : `http://114.55.249.156`;
 
 const baseUrl = debug ? `${url}:8080` : `${url}:9090`;
+//主界面URL
+exports.mainPageUrl = `http://114.55.249.156/login`;
 // const baseUrl = `${url}:9090`
 exports.baseUrl = baseUrl;
 //获取公司列表
@@ -16,8 +18,6 @@ exports.getVerifyCode = `${baseUrl}/login/verify_code`;
 exports.needVerifyCode = `${baseUrl}/login/need_verity_code`;
 //根据公司ID登陆
 exports.loginWithCompanyId = `${baseUrl}/login/login_by_phone`;
-//主界面URL
-exports.mainPageUrl = `${url}/login`;
 //领取客资URL
 exports.receiveKZUrl = `${baseUrl}/app/receive`;
 //拒接客资

@@ -296,6 +296,9 @@
     const remote = require('electron').remote
     const ipcRenderer = require('electron').ipcRenderer
     const currentWindow = remote.getCurrentWindow()
+    //机器码
+    const macId = ipcRenderer.sendSync('request-get-mac', 'ping')
+
     var app = new Vue({
         el: '#app',
         data: {
@@ -370,7 +373,7 @@
                     this.errorMsg = '请输入密码'
                     return false;
                 }
-                if (this.userInfo.password.length<6) {
+                if (this.userInfo.password.length < 6) {
                     this.errorMsg = '密码至少为6位'
                     return false;
                 }
@@ -481,7 +484,10 @@
                     code: this.userInfo.code,
                     companyId: this.selectedCompany.id,
                     clientFlag: true,
-                    clientVersion: url.clientVersion
+                    //客户端版本
+                    clientVersion: url.clientVersion,
+                    //MAC
+                    mac: macId
                 }
                 this.loading = true;
                 //回调

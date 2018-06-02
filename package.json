@@ -1,6 +1,6 @@
 {
   "name": "hm-crm-client",
-  "version": "v5.0.1",
+  "version": "v5.0.2",
   "description": "草莓卷jupiter",
   "main": "app.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "tutorial",
     "demo"
   ],
-  "author": "函木科技",
+  "author": "清莹网",
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^1.8.4"

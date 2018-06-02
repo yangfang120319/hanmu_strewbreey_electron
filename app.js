@@ -63,7 +63,9 @@ let commonVar = {
 	//当前登录信息
 	nowLoginInfo: '',
 	//提示信息
-	dialogMsg: {}
+	dialogMsg: {},
+	//MAC 机器码
+	macId: Util.getMacId()
 }
 
 //公共的设置
@@ -197,12 +199,12 @@ function opneIpcMsg() {
 			log.info(`${commonVar.nowLoginInfo.nickName}-主动关闭了领取客资窗口`);
 		}
 		//关闭闪动
-		flashSet.close = true;
+		closeFlashTray();
 	})
 	//当点击了领取按钮时
 	ipcMain.on('request-receive-kzinfo', (event, arg) => {
 		//关闭闪动
-		flashSet.close = true;
+		closeFlashTray();
 		//判断返回值
 		if (arg.code == '100000') {
 			//打开dialog窗口
@@ -254,6 +256,11 @@ function opneIpcMsg() {
 	ipcMain.on('request-get-offline-msg', (event, arg) => {
 		//获取提示消息内容
 		event.returnValue = commonVar.offLineMsg;
+	})
+	//获取机器码
+	ipcMain.on('request-get-mac', (event, arg) => {
+		//同步返回
+		event.returnValue = commonVar.macId;
 	})
 
 }
@@ -371,13 +378,14 @@ let flashSet = {
 	id: 0,
 	show: true
 }
+
 /**
  * 托盘闪动
  */
 function flashTray() {
 	if (tray == null) return;
 	//先清空上一个定时器
-	clearInterval(flashSet.id);
+	closeFlashTray();
 	//图标
 	let icon = path.join(__dirname, TRAY_ICON);
 	//透明图标
@@ -390,18 +398,23 @@ function flashTray() {
 			tray.setImage(icon);
 		}
 		flashSet.show = !flashSet.show;
-		//当可以关闭时
-		if (flashSet.close) {
-			tray.setImage(icon);
-			//清空并初始化
-			clearInterval(flashSet.id);
-			flashSet = {
-				close: false,
-				id: 0,
-				show: true
-			}
-		}
 	}, 500)
+}
+
+/**
+ * 关闭闪动
+ */
+function closeFlashTray() {
+	//图标
+	let icon = path.join(__dirname, TRAY_ICON);
+	clearInterval(flashSet.id);
+	tray.setImage(icon);
+	flashSet = {
+		close: false,
+		id: 0,
+		show: true
+	}
+
 }
 
 /**
