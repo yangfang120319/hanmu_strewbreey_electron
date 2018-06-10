@@ -102,8 +102,6 @@ function initProgram() {
 		opneIpcMsg();
 		//创建登录窗口
 		createLoginWindow();
-		// createOffLineWindow();
-		// createDialogWindow();
 		log.info('程序启动成功...');
 	} catch (error) {
 		log.error(error);
@@ -132,17 +130,11 @@ function opneIpcMsg() {
 				log.info('新的客资消息:' + JSON.stringify(commonVar.nowReceiveInfo));
 				//打开窗口
 				createMsgAlertWindow(arg);
-				//主窗口闪烁
+				//主窗口闪烁 聚焦
 				mainWindow.flashFrame(true);
+				mainWindow.focus();
 				//托盘闪烁
 				flashTray();
-			} else if (commonVar.nowReceiveInfo.type === 'xiaxian') {
-				//单点登录
-
-				//提示
-
-				//退出
-
 			}
 		} catch (error) {
 			console.log(typeof (arg))
@@ -227,7 +219,7 @@ function opneIpcMsg() {
 	ipcMain.on('request-axios-error', (event, arg) => {
 		log.error(`axios请求错误` + JSON.stringify(arg));
 		//发送钉钉消息
-		postDingMsg(arg)
+		postDingMsg(JSON.stringify(arg))
 	})
 	//show dialog
 	ipcMain.on('request-show-dialog', (event, arg) => {
@@ -261,6 +253,11 @@ function opneIpcMsg() {
 	ipcMain.on('request-get-mac', (event, arg) => {
 		//同步返回
 		event.returnValue = commonVar.macId;
+	})
+	//websocket 日志
+	ipcMain.on('request-websocket-log', (event, arg) => {
+		//打印日志
+		log.info(arg)
 	})
 
 }
@@ -319,7 +316,7 @@ function postDingMsg(content) {
 	let msg = {
 		"msgtype": "text",
 		"text": {
-			"content": JSON.stringify(content)
+			"content": content
 		},
 		"at": {
 			"atMobiles": [
@@ -487,12 +484,14 @@ function createWebSocketWindow() {
 		slashes: true
 	}))
 
+	log.info('websocket消息监听窗口打开...')
 	// 打开开发者工具。
 	if (debugModel) {
 		websocketWindow.webContents.openDevTools()
 	}
 
 	websocketWindow.on('closed', function () {
+		log.info('websocket消息监听窗口关闭...')
 		websocketWindow = null
 	})
 }

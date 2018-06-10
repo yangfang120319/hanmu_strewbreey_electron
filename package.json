@@ -1,6 +1,6 @@
 {
   "name": "hm-crm-client",
-  "version": "v5.0.2",
+  "version": "v5.0.5",
   "description": "草莓卷jupiter",
   "main": "app.js",
   "scripts": {

@@ -13,43 +13,60 @@
         const {
             ipcRenderer
         } = require('electron')
-        //同步获取配置
-        let gosasyConfig = ipcRenderer.sendSync('request-get-goeasy-config');
-        let goEasy = new GoEasy({
-            appkey: gosasyConfig.appkey
-        });
-        //订阅
-        goEasy.subscribe({
-            channel: gosasyConfig.channel,
-            onMessage: function (message) {
-                console.log(typeof (message.content))
-                ipcRenderer.send('request-open-kz-window', message.content)
-            }
-        });
-        //-----------
-        let websocket;
-        let userInfo = ipcRenderer.sendSync('request-get-now-login-user-info', 'ping')
-        //如果浏览器支持WebSocket
-        if (window.WebSocket) {
-            websocket = new WebSocket(`${url.websocketUrl}?cid=${userInfo.companyId}`); //获得WebSocket对象
-            //当有消息过来的时候触发
-            websocket.onmessage = function (event) {
-                console.log(event.data);
-            }
 
-            //连接关闭的时候触发
-            websocket.onclose = function (event) {
-                console.log("断开连接");
-            }
+        //获取配置
+        let goEasyConfig = ipcRenderer.sendSync('request-get-goeasy-config');
+        //定义到外面，防止变量回收
+        let goEasy;
 
-            //连接打开的时候触发
-            websocket.onopen = function (event) {
-                console.log("建立连接");
-            }
-        } else {
-            console.log("浏览器不支持WebSocket");
+
+        //初始化goeasy
+        initGoEasy();
+
+        function initGoEasy() {
+            //同步获取配置
+
+            goEasy = new GoEasy({
+                appkey: goEasyConfig.appkey,
+                //连接成功
+                onConnected: function () {
+                    ipcRenderer.send('request-websocket-log', `goeasy 成功连接`)
+                    //订阅
+                    subscribe();
+                },
+                //连接断开
+                onDisconnected: function () {
+                    ipcRenderer.send('request-websocket-log', `goeasy 连接断开`)
+                },
+                //连接失败
+                onConnectFailed: function (error) {
+                    ipcRenderer.send('request-websocket-log',
+                        `goeasy 连接失败,错误码${error.code},内容${error.content}`)
+                }
+            });
+
         }
-        
+
+        function subscribe() {
+            //订阅
+            goEasy.subscribe({
+                channel: goEasyConfig.channel,
+                //收到消息
+                onMessage: function (message) {
+                    ipcRenderer.send('request-open-kz-window', message.content)
+                },
+                //订阅成功
+                onSuccess: function () {
+                    ipcRenderer.send('request-websocket-log', 'goeasy 订阅成功:' + goEasyConfig.channel)
+                },
+                //订阅失败
+                onFailed: function (error) {
+                    ipcRenderer.send('request-websocket-log',
+                        `goeasy 订阅失败,错误码${error.code},内容${error.content}`)
+                }
+            });
+        }
+
         //发送消息
         function sendMsg(msg) {
             if (window.WebSocket) {
@@ -58,6 +75,30 @@
                 }
             } else {
                 return;
+            }
+        }
+
+
+        function webSocketInit() {
+            let websocket;
+            let userInfo = ipcRenderer.sendSync('request-get-now-login-user-info', 'ping')
+            如果浏览器支持WebSocket
+            if (window.WebSocket) {
+                websocket = new WebSocket(`${url.websocketUrl}?cid=${userInfo.companyId}`); //获得WebSocket对象
+                //当有消息过来的时候触发
+                websocket.onmessage = function (event) {
+                    console.log(event.data);
+                }
+                //连接关闭的时候触发
+                websocket.onclose = function (event) {
+                    console.log("断开连接");
+                }
+                //连接打开的时候触发
+                websocket.onopen = function (event) {
+                    console.log("建立连接");
+                }
+            } else {
+                console.log("浏览器不支持WebSocket");
             }
         }
     </script>

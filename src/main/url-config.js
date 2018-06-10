@@ -2,12 +2,13 @@
  * 系统配置的URL
  */
 const debug = false;
-
-const url = debug ? `http://127.0.0.1` : `http://114.55.249.156`;
+//let http://114.55.249.156  测试
+//原野 http://47.106.145.151
+const url = debug ? `http://127.0.0.1` : `http://47.106.145.151`;
 
 const baseUrl = debug ? `${url}:8080` : `${url}:9090`;
 //主界面URL
-exports.mainPageUrl = `http://114.55.249.156/login`;
+exports.mainPageUrl = `http://47.106.145.151:81/login`;
 // const baseUrl = `${url}:9090`
 exports.baseUrl = baseUrl;
 //获取公司列表
