@@ -18,7 +18,7 @@
   "author": "清莹网",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^1.8.4"
+    "electron": "^11.5.0"
   },
   "build": {
     "productName": "草莓卷jupiter",
